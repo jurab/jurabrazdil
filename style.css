@@ -714,6 +714,7 @@ main {
   align-items: center;
   gap: 16px;
   margin-top: 16px;
+  max-width: 560px;
 }
 
 .carousel-track-wrapper {
@@ -748,10 +749,12 @@ main {
 
 .carousel-slide iframe {
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 133.33%;
+  height: 133.33%;
   border: none;
   background: #000;
+  transform: scale(0.75);
+  transform-origin: top left;
 }
 
 .carousel-overlay {
@@ -806,6 +809,8 @@ main {
 .carousel-label {
   font-size: 18px;
   color: var(--fg-bright);
+  min-width: 0;
+  flex: 1;
 }
 
 .carousel-num {

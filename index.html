@@ -335,8 +335,14 @@
       label.innerHTML = s.name + ' <span class="carousel-desc">' + s.desc + '</span>';
     }
 
+    function resetSlide(idx) {
+      const iframe = track.children[idx].querySelector('iframe');
+      if (iframe) iframe.contentWindow.scrollTo(0, 0);
+    }
+
     function goTo(idx) {
       const slideEls = track.querySelectorAll('.carousel-slide');
+      resetSlide(currentSlide);
       slideEls[currentSlide].classList.remove('active');
       currentSlide = (idx + slides.length) % slides.length;
       slideEls[currentSlide].classList.add('active');
