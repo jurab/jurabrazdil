@@ -883,7 +883,8 @@ main {
 .demo-panel-title::before {
   content: '\203A';
   font-size: 28px;
-  line-height: 1;
+  line-height: 0;
+  margin-top: -2px;
   color: inherit;
   flex-shrink: 0;
   transition: transform 0.3s var(--ease);
@@ -913,14 +914,22 @@ main {
 }
 
 .demo-panel-body {
-  max-height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
   overflow: hidden;
-  transition: max-height 0.5s var(--ease), opacity 0.4s var(--ease);
   opacity: 0;
+  margin-top: 0;
+  padding-bottom: 0;
+  transition: grid-template-rows 0.45s var(--ease), opacity 0.35s var(--ease), margin-top 0.45s var(--ease), padding-bottom 0.45s var(--ease);
+}
+
+.demo-panel-inner {
+  overflow: hidden;
+  min-height: 0;
 }
 
 .demo-panel.open .demo-panel-body {
-  max-height: 1200px;
+  grid-template-rows: 1fr;
   opacity: 1;
   margin-top: 16px;
   padding-bottom: 60px;
