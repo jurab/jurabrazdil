@@ -152,13 +152,14 @@
       <div class="section-label">Physics &times; Typography</div>
       <p class="physics-desc">A collection of scroll-driven text animations built with real physics &mdash; Langevin dynamics, curl noise particle systems, orbital mechanics, thermal simulations. Each experiment turns typography into a physical object that responds to forces.</p>
       <div class="carousel">
-        <div class="carousel-viewport">
-          <button class="carousel-btn carousel-prev" aria-label="Previous">&larr;</button>
+        <div class="carousel-track-wrapper">
           <div class="carousel-track" id="carousel-track"></div>
-          <button class="carousel-btn carousel-next" aria-label="Next">&rarr;</button>
+          <div class="carousel-overlay" id="carousel-overlay">click &amp; scroll</div>
         </div>
-        <div class="carousel-info">
+        <div class="carousel-controls">
+          <button class="carousel-btn carousel-prev" aria-label="Previous">&larr;</button>
           <span class="carousel-label" id="carousel-label"></span>
+          <button class="carousel-btn carousel-next" aria-label="Next">&rarr;</button>
         </div>
       </div>
     </section>
@@ -284,6 +285,11 @@
     document.querySelector('.carousel-prev').addEventListener('click', () => goTo(currentSlide - 1));
     document.querySelector('.carousel-next').addEventListener('click', () => goTo(currentSlide + 1));
     buildSlides();
+
+    const overlay = document.getElementById('carousel-overlay');
+    overlay.addEventListener('click', () => {
+      overlay.classList.add('hidden');
+    });
   </script>
 
 </body>

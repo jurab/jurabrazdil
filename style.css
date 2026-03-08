@@ -477,10 +477,18 @@ main {
   position: relative;
 }
 
-.carousel-viewport {
+.carousel-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.carousel-track-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  max-width: 560px;
 }
 
 .carousel-track {
@@ -488,9 +496,8 @@ main {
   border: 1px solid var(--border);
   border-radius: 3px;
   overflow: hidden;
-  aspect-ratio: 16 / 10;
-  flex: 1;
-  min-width: 0;
+  aspect-ratio: 16 / 9;
+  max-height: 360px;
 }
 
 .carousel-slide {
@@ -515,6 +522,33 @@ main {
   background: #000;
 }
 
+.carousel-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  background: rgba(0, 0, 0, 0.75);
+  font-size: 28px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted-light);
+  cursor: pointer;
+  transition: opacity 0.3s var(--ease), font-size 0.2s var(--ease), color 0.2s var(--ease);
+  border-radius: 3px;
+}
+
+.carousel-overlay:hover {
+  font-size: 34px;
+  color: var(--fg-bright);
+}
+
+.carousel-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .carousel-btn {
   background: none;
   border: 1px solid var(--border);
@@ -536,9 +570,6 @@ main {
   color: var(--fg-bright);
 }
 
-.carousel-info {
-  margin-top: 16px;
-}
 
 .carousel-label {
   font-size: 15px;
