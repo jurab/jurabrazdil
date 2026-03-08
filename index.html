@@ -28,11 +28,11 @@
 
   <!-- Side nav -->
   <nav class="side-nav" id="side-nav">
-    <a href="javascript:void(0)" data-section="hero" class="side-dot active" aria-label="Hero"><span class="side-label">Top</span></a>
-    <a href="javascript:void(0)" data-section="physics" class="side-dot" aria-label="Demos"><span class="side-label">Demos</span></a>
-    <a href="javascript:void(0)" data-section="about" class="side-dot" aria-label="About"><span class="side-label">About</span></a>
-    <a href="javascript:void(0)" data-section="projects" class="side-dot" aria-label="Projects"><span class="side-label">Projects</span></a>
-    <a href="javascript:void(0)" data-section="timeline" class="side-dot" aria-label="Experience"><span class="side-label">Experience</span></a>
+    <a href="javascript:void(0)" data-section="hero" class="side-dot active" aria-label="Hero"><span class="side-label" data-i18n="nav.top">Top</span></a>
+    <a href="javascript:void(0)" data-section="physics" class="side-dot" aria-label="Demos"><span class="side-label" data-i18n="nav.demos">Demos</span></a>
+    <a href="javascript:void(0)" data-section="about" class="side-dot" aria-label="About"><span class="side-label" data-i18n="nav.about">About</span></a>
+    <a href="javascript:void(0)" data-section="projects" class="side-dot" aria-label="Projects"><span class="side-label" data-i18n="nav.projects">Projects</span></a>
+    <a href="javascript:void(0)" data-section="timeline" class="side-dot" aria-label="Experience"><span class="side-label" data-i18n="nav.experience">Experience</span></a>
   </nav>
 
   <main>
@@ -46,13 +46,13 @@
         </div>
         <span class="voice-pill" id="voice-pill">
           <span class="voice-pill-dot"></span><span class="voice-pill-label" id="voice-pill-label">offline</span>
-          <span class="voice-tooltip">When I'm online, press to connect with me over voice — instantly.</span>
+          <span class="voice-tooltip" data-i18n="hero.voiceTooltip">When I'm online, press to connect with me over voice — instantly.</span>
         </span>
       </div>
 
       <h1 class="hero-name reveal">Jura Brázdil</h1>
-      <p class="hero-tagline reveal">tech founder, engineer, designer, poet</p>
-      <p class="hero-location reveal">Prague, Bohemia</p>
+      <p class="hero-tagline reveal" data-i18n="hero.tagline">tech founder, engineer, designer, poet</p>
+      <p class="hero-location reveal" data-i18n="hero.location">Prague, Bohemia</p>
 
       <!-- Contact -->
       <div class="hero-links reveal">
@@ -104,6 +104,17 @@
         </a>
       </div>
 
+      <div class="lang-toggle reveal">
+        <label class="lang-option">
+          <input type="radio" name="lang" value="en" checked>
+          <span>EN</span>
+        </label>
+        <label class="lang-option">
+          <input type="radio" name="lang" value="cs">
+          <span>CZ</span>
+        </label>
+      </div>
+
       <a class="scroll-arrow" href="javascript:void(0)" onclick="document.getElementById('physics').scrollIntoView({behavior:'smooth'})" aria-label="Scroll down">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 5v14M5 12l7 7 7-7"/>
@@ -114,19 +125,19 @@
 
     <!-- ────────── Demos (accordion) ────────── -->
     <section class="demos-accordion">
-      <div class="section-label reveal">Demos</div>
+      <div class="section-label reveal" data-i18n="demos.label">Demos</div>
 
       <div id="physics" class="demo-panel reveal">
         <div class="demo-panel-header">
-          <div class="demo-panel-title">Physics &times; Typography <span class="demo-panel-subtitle">turning text into particles and back</span></div>
+          <div class="demo-panel-title"><span data-i18n="demos.physics.title">Physics &times; Typography</span> <span class="demo-panel-subtitle" data-i18n="demos.physics.subtitle">turning text into particles and back</span></div>
         </div>
         <div class="demo-panel-body">
           <div class="demo-panel-inner">
-            <p class="physics-desc">A collection of scroll-driven text animations built with real physics &mdash; Langevin dynamics, curl noise particle systems, orbital mechanics, thermal simulations. Each experiment turns typography into a physical object that responds to forces.</p>
+            <p class="physics-desc" data-i18n="demos.physics.desc">A collection of scroll-driven text animations built with real physics &mdash; Langevin dynamics, curl noise particle systems, orbital mechanics, thermal simulations. Each experiment turns typography into a physical object that responds to forces.</p>
             <div class="carousel">
               <div class="carousel-track-wrapper">
                 <div class="carousel-track" id="carousel-track"></div>
-                <div class="carousel-overlay" id="carousel-overlay">click &amp; scroll</div>
+                <div class="carousel-overlay" id="carousel-overlay" data-i18n="demos.carousel.overlay">click &amp; scroll</div>
               </div>
               <div class="carousel-controls">
                 <button class="carousel-btn carousel-prev" aria-label="Previous">&larr;</button>
@@ -140,11 +151,11 @@
 
       <div id="voidchat" class="demo-panel reveal">
         <div class="demo-panel-header">
-          <div class="demo-panel-title">voidchat <span class="demo-panel-subtitle">p2p chatroulette clone</span></div>
+          <div class="demo-panel-title"><span data-i18n="demos.voidchat.title">voidchat</span> <span class="demo-panel-subtitle" data-i18n="demos.voidchat.subtitle">p2p chatroulette clone</span></div>
         </div>
         <div class="demo-panel-body">
           <div class="demo-panel-inner">
-            <p class="voidchat-desc">P2P voice-only chatroulette. Two strangers connect and talk &mdash; zero UI, just a black screen with a breathing liquid orb that distorts to audio. Built on WebRTC with Cloudflare Workers and Durable Objects for signaling.</p>
+            <p class="voidchat-desc" data-i18n="demos.voidchat.desc">P2P voice-only chatroulette. Two strangers connect and talk &mdash; zero UI, just a black screen with a breathing liquid orb that distorts to audio. Built on WebRTC with Cloudflare Workers and Durable Objects for signaling.</p>
             <div class="voidchat-embed">
               <iframe src="https://voidchat-erp.pages.dev" allow="microphone"></iframe>
             </div>
@@ -154,11 +165,11 @@
 
       <div id="kolacik" class="demo-panel reveal">
         <div class="demo-panel-header">
-          <div class="demo-panel-title">koláčik <span class="demo-panel-subtitle">custom strudel.cc replacement</span></div>
+          <div class="demo-panel-title"><span data-i18n="demos.kolacik.title">koláčik</span> <span class="demo-panel-subtitle" data-i18n="demos.kolacik.subtitle">custom strudel.cc replacement</span></div>
         </div>
         <div class="demo-panel-body">
           <div class="demo-panel-inner">
-            <p class="demo-video-desc">Live coding music workbench built on top of <a href="https://strudel.cc" target="_blank" rel="noopener">strudel.cc</a>. Multi-track mixer with real-time sync and audio-reactive curl noise particle visualization.</p>
+            <p class="demo-video-desc" data-i18n="demos.kolacik.desc">Live coding music workbench built on top of <a href="https://strudel.cc" target="_blank" rel="noopener">strudel.cc</a>. Multi-track mixer with real-time sync and audio-reactive curl noise particle visualization.</p>
             <div class="demo-video-embed">
               <iframe src="https://www.youtube.com/embed/mnUSQjdK5nA" allowfullscreen></iframe>
             </div>
@@ -168,11 +179,11 @@
 
       <div id="claudecraft" class="demo-panel reveal">
         <div class="demo-panel-header">
-          <div class="demo-panel-title">claudecraft <span class="demo-panel-subtitle">claude dashboard with voiceovers</span></div>
+          <div class="demo-panel-title"><span data-i18n="demos.claudecraft.title">claudecraft</span> <span class="demo-panel-subtitle" data-i18n="demos.claudecraft.subtitle">claude dashboard with voiceovers</span></div>
         </div>
         <div class="demo-panel-body">
           <div class="demo-panel-inner">
-            <p class="demo-video-desc">Global usage bar and reset times. Custom triggers for anything that could happen when chatting with Claude and unique character voiceovers for every conversation. Assigns characters to coding sessions and plays sound effects on hook events. Currently having a blast with a custom Warcraft 3 sound-pack.</p>
+            <p class="demo-video-desc" data-i18n="demos.claudecraft.desc">Global usage bar and reset times. Custom triggers for anything that could happen when chatting with Claude and unique character voiceovers for every conversation. Assigns characters to coding sessions and plays sound effects on hook events. Currently having a blast with a custom Warcraft 3 sound-pack.</p>
             <div class="demo-video-embed">
               <iframe src="https://www.youtube.com/embed/eHFgE67nwys" allowfullscreen></iframe>
             </div>
@@ -184,26 +195,26 @@
 
     <!-- ────────── About ────────── -->
     <section id="about" class="about reveal">
-      <div class="section-label">About</div>
+      <div class="section-label" data-i18n="about.label">About</div>
       <div class="about-body">
-        <p>In 2016 at the age of 22 I joined <a href="https://www.linkedin.com/in/🌱-michael-haase-5722b46/" target="_blank" rel="noopener">Michael Haase</a> to build <a href="https://agfundernews.com/plant-jammer-scoops-4-7m-from-oetker-miele-to-develop-its-digital-chef" target="_blank" rel="noopener">Plant Jammer</a>. We helped people learn to cook with less meat and foodwaste. I figured out a way to pair ingredients by turning word2vec into a recommender engine, and built a greenfield backend from scratch. Eventually I grew into a CTO role and a co-founder. We had over 150k users across 3 consumer apps, plus a SaaS API. Despite &euro;4M in pre-seed and topping app store charts, we failed on the business side.</p>
-        <p>I signed up for a PhD with the goal of studying the psychological impact of LLMs, but I didn&rsquo;t meet likeminded people who&rsquo;d take it seriously back in &rsquo;22. I noticed the disinterest and dropped out quickly. During that time I worked in a small team with <a href="https://www.forbes.com/profile/akimitsu-sano/" target="_blank" rel="noopener">Akimitsu Sano</a> on his <a href="https://www.cookwithmoment.com" target="_blank" rel="noopener">Moment</a> project.</p>
-        <p>In my last job I built an agentic system to drive HR conversations. That&rsquo;s 2 years spent on prompting, tools and RAG &mdash; and I&rsquo;m still writing this text by hand.</p>
-        <p>At present I lead workshops on AI automation and build for fun. Recently I&rsquo;ve built a P2P voice-only omegle clone, a skill-tree interface for modular video lectures, a physics-based text animation engine, or a voice-over and usage dashboard for Claude Code.</p>
-        <p>Apart from that I climb rocks, read about philosophy of mind and I write. A byproduct of the writing is a 10k Instagram community around my poetry.</p>
+        <p data-i18n="about.p1">In 2016 at the age of 22 I joined <a href="https://www.linkedin.com/in/🌱-michael-haase-5722b46/" target="_blank" rel="noopener">Michael Haase</a> to build <a href="https://agfundernews.com/plant-jammer-scoops-4-7m-from-oetker-miele-to-develop-its-digital-chef" target="_blank" rel="noopener">Plant Jammer</a>. We helped people learn to cook with less meat and foodwaste. I figured out a way to pair ingredients by turning word2vec into a recommender engine, and built a greenfield backend from scratch. Eventually I grew into a CTO role and a co-founder. We had over 150k users across 3 consumer apps, plus a SaaS API. Despite &euro;4M in pre-seed and topping app store charts, we failed on the business side.</p>
+        <p data-i18n="about.p2">I signed up for a PhD with the goal of studying the psychological impact of LLMs, but I didn&rsquo;t meet likeminded people who&rsquo;d take it seriously back in &rsquo;22. I noticed the disinterest and dropped out quickly. During that time I worked in a small team with <a href="https://www.forbes.com/profile/akimitsu-sano/" target="_blank" rel="noopener">Akimitsu Sano</a> on his <a href="https://www.cookwithmoment.com" target="_blank" rel="noopener">Moment</a> project.</p>
+        <p data-i18n="about.p3">In my last job I built an agentic system to drive HR conversations. That&rsquo;s 2 years spent on prompting, tools and RAG &mdash; and I&rsquo;m still writing this text by hand.</p>
+        <p data-i18n="about.p4">At present I lead workshops on AI automation and build for fun. Recently I&rsquo;ve built a P2P voice-only omegle clone, a skill-tree interface for modular video lectures, a physics-based text animation engine, or a voice-over and usage dashboard for Claude Code.</p>
+        <p data-i18n="about.p5">Apart from that I climb rocks, read about philosophy of mind and I write. A byproduct of the writing is a 10k Instagram community around my poetry.</p>
       </div>
     </section>
 
     <!-- ────────── Projects ────────── -->
     <section id="projects" class="projects">
-      <div class="section-label reveal">Selected Projects</div>
+      <div class="section-label reveal" data-i18n="projects.label">Selected Projects</div>
 
       <article class="project reveal">
         <div class="project-header">
           <h3 class="project-name">Plant Jammer</h3>
-          <span class="project-role">CTO / Co-founder &middot; 2016&ndash;22</span>
+          <span class="project-role" data-i18n="projects.pj.role">CTO / Co-founder &middot; 2016&ndash;22</span>
         </div>
-        <p class="project-desc">Turned word2vec into a food recommender engine. Built the entire backend from zero and owned it through &euro;4M in funding, 150k+ users across 3 consumer apps, and a B2B API. Topped app store charts in multiple markets.</p>
+        <p class="project-desc" data-i18n="projects.pj.desc">Turned word2vec into a food recommender engine. Built the entire backend from zero and owned it through &euro;4M in funding, 150k+ users across 3 consumer apps, and a B2B API. Topped app store charts in multiple markets.</p>
         <div class="project-tags">
           <span>Python</span><span>Django</span><span>PostgreSQL</span><span>AWS</span><span>word2vec</span>
         </div>
@@ -212,9 +223,9 @@
       <article class="project reveal">
         <div class="project-header">
           <h3 class="project-name"><a href="https://github.com/jurab/voidchat" target="_blank" rel="noopener"><svg class="gh-icon"><use href="#icon-gh"/></svg>voidchat</a></h3>
-          <span class="project-role">Personal &middot; Dec 2025</span>
+          <span class="project-role" data-i18n="projects.vc.role">Personal &middot; Dec 2025</span>
         </div>
-        <p class="project-desc">Voice-only chatroulette. Two strangers connect and talk &mdash; zero UI, just a black screen with a breathing liquid orb that distorts to audio. Zero-cost infrastructure on Cloudflare Workers and Durable Objects.</p>
+        <p class="project-desc" data-i18n="projects.vc.desc">Voice-only chatroulette. Two strangers connect and talk &mdash; zero UI, just a black screen with a breathing liquid orb that distorts to audio. Zero-cost infrastructure on Cloudflare Workers and Durable Objects.</p>
         <div class="project-tags">
           <span>WebRTC</span><span>Cloudflare Workers</span><span>Durable Objects</span><span>Vanilla JS</span>
         </div>
@@ -223,9 +234,9 @@
       <article class="project reveal">
         <div class="project-header">
           <h3 class="project-name"><a href="https://github.com/jurab/text-animation" target="_blank" rel="noopener"><svg class="gh-icon"><use href="#icon-gh"/></svg>text-animation</a></h3>
-          <span class="project-role">Personal &middot; Mar 2026</span>
+          <span class="project-role" data-i18n="projects.ta.role">Personal &middot; Mar 2026</span>
         </div>
-        <p class="project-desc">Physics-driven text animations &mdash; Langevin dynamics, curl noise particle systems, Verlet integration, orbital mechanics. Each experiment turns typography into a physical object that responds to forces.</p>
+        <p class="project-desc" data-i18n="projects.ta.desc">Physics-driven text animations &mdash; Langevin dynamics, curl noise particle systems, Verlet integration, orbital mechanics. Each experiment turns typography into a physical object that responds to forces.</p>
         <div class="project-tags">
           <span>Canvas</span><span>Physics</span><span>Vanilla JS</span>
         </div>
@@ -234,9 +245,9 @@
       <article class="project reveal">
         <div class="project-header">
           <h3 class="project-name"><a href="https://github.com/jurab/kolacik" target="_blank" rel="noopener"><svg class="gh-icon"><use href="#icon-gh"/></svg>koláčik</a></h3>
-          <span class="project-role">Personal &middot; Jan 2026</span>
+          <span class="project-role" data-i18n="projects.ko.role">Personal &middot; Jan 2026</span>
         </div>
-        <p class="project-desc">Live coding music workbench built on top of <a href="https://strudel.cc" target="_blank" rel="noopener">strudel.cc</a>. Multi-track mixer with real-time sync and audio-reactive curl noise particle visualization.</p>
+        <p class="project-desc" data-i18n="projects.ko.desc">Live coding music workbench built on top of <a href="https://strudel.cc" target="_blank" rel="noopener">strudel.cc</a>. Multi-track mixer with real-time sync and audio-reactive curl noise particle visualization.</p>
         <div class="project-tags">
           <span>Astro</span><span>Strudel</span><span>SQLite</span><span>Web Audio</span>
         </div>
@@ -245,9 +256,9 @@
       <article class="project reveal">
         <div class="project-header">
           <h3 class="project-name"><a href="https://github.com/jurab/skilltrees" target="_blank" rel="noopener"><svg class="gh-icon"><use href="#icon-gh"/></svg>skilltrees</a></h3>
-          <span class="project-role">Personal &middot; Dec 2025</span>
+          <span class="project-role" data-i18n="projects.st.role">Personal &middot; Dec 2025</span>
         </div>
-        <p class="project-desc">Skill tree course platform. DAG-ordered video lectures with prerequisite tracking, rendered as an interactive node graph.</p>
+        <p class="project-desc" data-i18n="projects.st.desc">Skill tree course platform. DAG-ordered video lectures with prerequisite tracking, rendered as an interactive node graph.</p>
         <div class="project-tags">
           <span>Django</span><span>Cytoscape.js</span><span>Python</span>
         </div>
@@ -256,9 +267,9 @@
       <article class="project reveal">
         <div class="project-header">
           <h3 class="project-name"><a href="https://github.com/jurab/trackpad" target="_blank" rel="noopener"><svg class="gh-icon"><use href="#icon-gh"/></svg>trackpad</a></h3>
-          <span class="project-role">Personal &middot; Feb 2026</span>
+          <span class="project-role" data-i18n="projects.tp.role">Personal &middot; Feb 2026</span>
         </div>
-        <p class="project-desc">iPhone as a Mac trackpad over USB. Gesture recognition, state machines, and CGEvent injection for native cursor control.</p>
+        <p class="project-desc" data-i18n="projects.tp.desc">iPhone as a Mac trackpad over USB. Gesture recognition, state machines, and CGEvent injection for native cursor control.</p>
         <div class="project-tags">
           <span>Swift</span><span>UIKit</span><span>CGEvent</span>
         </div>
@@ -267,9 +278,9 @@
       <article class="project reveal">
         <div class="project-header">
           <h3 class="project-name"><a href="https://github.com/jurab/insomnia" target="_blank" rel="noopener"><svg class="gh-icon"><use href="#icon-gh"/></svg>insomnia</a></h3>
-          <span class="project-role">Personal &middot; Feb 2026</span>
+          <span class="project-role" data-i18n="projects.in.role">Personal &middot; Feb 2026</span>
         </div>
-        <p class="project-desc">Passive API explorer. Captures HTTP traffic via Electron webRequest while you browse, with browser session transport and multi-provider auth.</p>
+        <p class="project-desc" data-i18n="projects.in.desc">Passive API explorer. Captures HTTP traffic via Electron webRequest while you browse, with browser session transport and multi-provider auth.</p>
         <div class="project-tags">
           <span>Electron</span><span>Node.js</span><span>HTTP</span>
         </div>
@@ -278,39 +289,39 @@
 
     <!-- ────────── Experience ────────── -->
     <section id="timeline" class="timeline">
-      <div class="section-label reveal">Experience</div>
+      <div class="section-label reveal" data-i18n="timeline.label">Experience</div>
       <div class="timeline-entries">
         <div class="timeline-entry reveal">
-          <span class="timeline-period">2025 &mdash; now</span>
-          <div><strong>Freelance</strong><span class="timeline-role">AI &amp; Automation Teacher</span></div>
+          <span class="timeline-period" data-i18n="timeline.freelance.period">2025 &mdash; now</span>
+          <div><strong>Freelance</strong><span class="timeline-role" data-i18n="timeline.freelance.role">AI &amp; Automation Teacher</span></div>
         </div>
         <div class="timeline-entry reveal">
           <span class="timeline-period">2023 &mdash; 2025</span>
-          <div><strong>get-ikigai</strong><span class="timeline-role">Developer, Agentic Systems</span></div>
+          <div><strong>get-ikigai</strong><span class="timeline-role" data-i18n="timeline.ikigai.role">Developer, Agentic Systems</span></div>
         </div>
         <div class="timeline-entry reveal">
           <span class="timeline-period">2022 &mdash; 2023</span>
-          <div><strong>Reach Tech</strong><span class="timeline-role">Tech Lead / Product</span></div>
+          <div><strong>Reach Tech</strong><span class="timeline-role" data-i18n="timeline.reach.role">Tech Lead / Product</span></div>
         </div>
         <div class="timeline-entry reveal">
           <span class="timeline-period">2022</span>
-          <div><strong>Cookpad</strong><span class="timeline-role">Senior Software Engineer</span></div>
+          <div><strong>Cookpad</strong><span class="timeline-role" data-i18n="timeline.cookpad.role">Senior Software Engineer</span></div>
         </div>
         <div class="timeline-entry reveal">
           <span class="timeline-period">2016 &mdash; 2022</span>
-          <div><strong>Plant Jammer</strong><span class="timeline-role">CTO, Co-founder</span></div>
+          <div><strong>Plant Jammer</strong><span class="timeline-role" data-i18n="timeline.pj.role">CTO, Co-founder</span></div>
         </div>
       </div>
 
       <div class="education reveal">
-        <div class="section-sublabel">Education</div>
+        <div class="section-sublabel" data-i18n="edu.label">Education</div>
         <div class="edu-entry">
-          <span class="edu-degree">MSc IT &amp; Cognition</span>
-          <span class="edu-school">University of Copenhagen</span>
+          <span class="edu-degree" data-i18n="edu.msc.degree">MSc IT &amp; Cognition</span>
+          <span class="edu-school" data-i18n="edu.msc.school">University of Copenhagen</span>
         </div>
         <div class="edu-entry">
-          <span class="edu-degree">BSc Robotics &amp; Cybernetics</span>
-          <span class="edu-school">Czech Technical University, Prague</span>
+          <span class="edu-degree" data-i18n="edu.bsc.degree">BSc Robotics &amp; Cybernetics</span>
+          <span class="edu-school" data-i18n="edu.bsc.school">Czech Technical University, Prague</span>
         </div>
       </div>
     </section>
@@ -324,11 +335,172 @@
       <a href="https://www.linkedin.com/in/jura-brazdil" target="_blank" rel="noopener">LinkedIn</a>
       <span class="sep">&middot;</span>
       <input class="voice-auth" id="voice-auth" type="text" placeholder="..." autocomplete="off" spellcheck="false">
-      <span class="voice-auth-msg hidden" id="voice-auth-msg">Hi Jura, you're online</span>
+      <span class="voice-auth-msg hidden" id="voice-auth-msg" data-i18n="footer.authMsg">Hi Jura, you're online</span>
     </div>
   </footer>
 
   <script>
+    // ─── i18n ───
+    let currentLang = localStorage.getItem('lang') || 'en';
+
+    const translations = {
+      en: {
+        'hero.tagline': 'tech founder, engineer, designer, poet',
+        'hero.location': 'Prague, Bohemia',
+        'hero.voiceTooltip': "When I'm online, press to connect with me over voice \u2014 instantly.",
+        'nav.top': 'Top', 'nav.demos': 'Demos', 'nav.about': 'About', 'nav.projects': 'Projects', 'nav.experience': 'Experience',
+        'demos.label': 'Demos',
+        'demos.physics.title': 'Physics \u00d7 Typography',
+        'demos.physics.subtitle': 'turning text into particles and back',
+        'demos.physics.desc': 'A collection of scroll-driven text animations built with real physics \u2014 Langevin dynamics, curl noise particle systems, orbital mechanics, thermal simulations. Each experiment turns typography into a physical object that responds to forces.',
+        'demos.carousel.overlay': 'click & scroll',
+        'demos.voidchat.title': 'voidchat',
+        'demos.voidchat.subtitle': 'p2p chatroulette clone',
+        'demos.voidchat.desc': 'P2P voice-only chatroulette. Two strangers connect and talk \u2014 zero UI, just a black screen with a breathing liquid orb that distorts to audio. Built on WebRTC with Cloudflare Workers and Durable Objects for signaling.',
+        'demos.kolacik.title': 'kol\u00e1\u010dik',
+        'demos.kolacik.subtitle': 'custom strudel.cc replacement',
+        'demos.kolacik.desc': 'Live coding music workbench built on top of <a href="https://strudel.cc" target="_blank" rel="noopener">strudel.cc</a>. Multi-track mixer with real-time sync and audio-reactive curl noise particle visualization.',
+        'demos.claudecraft.title': 'claudecraft',
+        'demos.claudecraft.subtitle': 'claude dashboard with voiceovers',
+        'demos.claudecraft.desc': 'Global usage bar and reset times. Custom triggers for anything that could happen when chatting with Claude and unique character voiceovers for every conversation. Assigns characters to coding sessions and plays sound effects on hook events. Currently having a blast with a custom Warcraft 3 sound-pack.',
+        'about.label': 'About',
+        'about.p1': 'In 2016 at the age of 22 I joined <a href="https://www.linkedin.com/in/\ud83c\udf31-michael-haase-5722b46/" target="_blank" rel="noopener">Michael Haase</a> to build <a href="https://agfundernews.com/plant-jammer-scoops-4-7m-from-oetker-miele-to-develop-its-digital-chef" target="_blank" rel="noopener">Plant Jammer</a>. We helped people learn to cook with less meat and foodwaste. I figured out a way to pair ingredients by turning word2vec into a recommender engine, and built a greenfield backend from scratch. Eventually I grew into a CTO role and a co-founder. We had over 150k users across 3 consumer apps, plus a SaaS API. Despite \u20ac4M in pre-seed and topping app store charts, we failed on the business side.',
+        'about.p2': 'I signed up for a PhD with the goal of studying the psychological impact of LLMs, but I didn\u2019t meet likeminded people who\u2019d take it seriously back in \u201922. I noticed the disinterest and dropped out quickly. During that time I worked in a small team with <a href="https://www.forbes.com/profile/akimitsu-sano/" target="_blank" rel="noopener">Akimitsu Sano</a> on his <a href="https://www.cookwithmoment.com" target="_blank" rel="noopener">Moment</a> project.',
+        'about.p3': 'In my last job I built an agentic system to drive HR conversations. That\u2019s 2 years spent on prompting, tools and RAG \u2014 and I\u2019m still writing this text by hand.',
+        'about.p4': 'At present I lead workshops on AI automation and build for fun. Recently I\u2019ve built a P2P voice-only omegle clone, a skill-tree interface for modular video lectures, a physics-based text animation engine, or a voice-over and usage dashboard for Claude Code.',
+        'about.p5': 'Apart from that I climb rocks, read about philosophy of mind and I write. A byproduct of the writing is a 10k Instagram community around my poetry.',
+        'projects.label': 'Selected Projects',
+        'projects.pj.role': 'CTO / Co-founder \u00b7 2016\u201322',
+        'projects.pj.desc': 'Turned word2vec into a food recommender engine. Built the entire backend from zero and owned it through \u20ac4M in funding, 150k+ users across 3 consumer apps, and a B2B API. Topped app store charts in multiple markets.',
+        'projects.vc.role': 'Personal \u00b7 Dec 2025',
+        'projects.vc.desc': 'Voice-only chatroulette. Two strangers connect and talk \u2014 zero UI, just a black screen with a breathing liquid orb that distorts to audio. Zero-cost infrastructure on Cloudflare Workers and Durable Objects.',
+        'projects.ta.role': 'Personal \u00b7 Mar 2026',
+        'projects.ta.desc': 'Physics-driven text animations \u2014 Langevin dynamics, curl noise particle systems, Verlet integration, orbital mechanics. Each experiment turns typography into a physical object that responds to forces.',
+        'projects.ko.role': 'Personal \u00b7 Jan 2026',
+        'projects.ko.desc': 'Live coding music workbench built on top of <a href="https://strudel.cc" target="_blank" rel="noopener">strudel.cc</a>. Multi-track mixer with real-time sync and audio-reactive curl noise particle visualization.',
+        'projects.st.role': 'Personal \u00b7 Dec 2025',
+        'projects.st.desc': 'Skill tree course platform. DAG-ordered video lectures with prerequisite tracking, rendered as an interactive node graph.',
+        'projects.tp.role': 'Personal \u00b7 Feb 2026',
+        'projects.tp.desc': 'iPhone as a Mac trackpad over USB. Gesture recognition, state machines, and CGEvent injection for native cursor control.',
+        'projects.in.role': 'Personal \u00b7 Feb 2026',
+        'projects.in.desc': 'Passive API explorer. Captures HTTP traffic via Electron webRequest while you browse, with browser session transport and multi-provider auth.',
+        'timeline.label': 'Experience',
+        'timeline.freelance.period': '2025 \u2014 now',
+        'timeline.freelance.role': 'AI & Automation Teacher',
+        'timeline.ikigai.role': 'Developer, Agentic Systems',
+        'timeline.reach.role': 'Tech Lead / Product',
+        'timeline.cookpad.role': 'Senior Software Engineer',
+        'timeline.pj.role': 'CTO, Co-founder',
+        'edu.label': 'Education',
+        'edu.msc.degree': 'MSc IT & Cognition',
+        'edu.msc.school': 'University of Copenhagen',
+        'edu.bsc.degree': 'BSc Robotics & Cybernetics',
+        'edu.bsc.school': 'Czech Technical University, Prague',
+        'footer.authMsg': "Hi Jura, you're online",
+      },
+      cs: {
+        'hero.tagline': 'zakladatel, in\u017een\u00fdr, design\u00e9r, b\u00e1sn\u00edk',
+        'hero.location': 'Praha, \u010cechy',
+        'hero.voiceTooltip': 'Kdy\u017e jsem online, klikni a p\u0159ipoj se ke mn\u011b hlasem \u2014 okam\u017eit\u011b.',
+        'nav.top': '\u00davod', 'nav.demos': 'Uk\u00e1zky', 'nav.about': 'O mn\u011b', 'nav.projects': 'Projekty', 'nav.experience': 'Zku\u0161enosti',
+        'demos.label': 'Uk\u00e1zky',
+        'demos.physics.title': 'Fyzika \u00d7 Typografie',
+        'demos.physics.subtitle': 'z textu \u010d\u00e1stice a zp\u00e1tky',
+        'demos.physics.desc': 'Kolekce textov\u00fdch animac\u00ed \u0159\u00edzen\u00fdch scrollem, postaven\u00fdch na re\u00e1ln\u00e9 fyzice \u2014 Langevinova dynamika, curl noise particle syst\u00e9my, orbit\u00e1ln\u00ed mechanika, teplotn\u00ed simulace. Ka\u017ed\u00fd experiment prom\u011bn\u00ed typografii ve fyzick\u00fd objekt, kter\u00fd reaguje na s\u00edly.',
+        'demos.carousel.overlay': 'klikni & scrolluj',
+        'demos.voidchat.title': 'voidchat',
+        'demos.voidchat.subtitle': 'p2p chatroulette klon',
+        'demos.voidchat.desc': 'P2P hlasov\u00fd chatroulette. P\u0159es mikrofon propoj\u00ed dva n\u00e1hodn\u00e9 lidi, bez serveru, p\u0159\u00edmo ze za\u0159\u00edzen\u00ed na za\u0159\u00edzen\u00ed \u2014 minimalistick\u00e9 UI. Postaveno na WebRTC s Cloudflare Workers a Durable Objects.',
+        'demos.kolacik.title': 'kol\u00e1\u010dik',
+        'demos.kolacik.subtitle': 'custom n\u00e1hrada za strudel.cc',
+        'demos.kolacik.desc': 'Live coding hudebn\u00ed workbench postaven\u00fd na <a href="https://strudel.cc" target="_blank" rel="noopener">strudel.cc</a>. Multi-track mixer s real-time synchronizac\u00ed a audio-reaktivn\u00ed curl noise particle vizualizac\u00ed.',
+        'demos.claudecraft.title': 'claudecraft',
+        'demos.claudecraft.subtitle': 'claude dashboard s voiceovery',
+        'demos.claudecraft.desc': 'Claude dashboard. Glob\u00e1ln\u00ed usage bar, reset \u010dasy. Custom triggery pro cokoliv, co se m\u016f\u017ee st\u00e1t p\u0159i chatov\u00e1n\u00ed s Claudem, a voiceovery pro ka\u017edou konverzaci. P\u0159i\u0159azuje postavy ke claude sessions a p\u0159ehr\u00e1v\u00e1 zvukov\u00e9 efekty podle hook event\u016f. Moment\u00e1ln\u011b jedu na custom Warcraft 3 sound-packu, tehee.',
+        'about.label': 'O mn\u011b',
+        'about.p1': 'V roce 2016 ve sv\u00fdch 22 letech jsem se v D\u00e1nsku p\u0159ipojil k <a href="https://www.linkedin.com/in/\ud83c\udf31-michael-haase-5722b46/" target="_blank" rel="noopener">Michaelovi Haase</a> a spole\u010dn\u011b jsme vybudovali <a href="https://agfundernews.com/plant-jammer-scoops-4-7m-from-oetker-miele-to-develop-its-digital-chef" target="_blank" rel="noopener">Plant Jammer</a>. Pom\u00e1hali jsme lidem nau\u010dit se va\u0159it bez masa a obecn\u011b bez pl\u00fdtv\u00e1n\u00ed j\u00eddlem. P\u0159i\u0161el jsem na zp\u016fsob, jak p\u00e1rovat ingredience pomoc\u00ed word2vec, a postavil cel\u00fd backend od nuly. Postupn\u011b jsem vyrostl do role CTO a spoluzakladatele. M\u011bli jsme p\u0159es 150 tis\u00edc u\u017eivatel\u016f ve 3 end-user aplikac\u00edch plus SaaS API. Vybrali jsme p\u0159es \u20ac4M v pre-seed investic\u00edch a p\u0159esto\u017ee jsme v app storech vystoupali na vr\u0161ky \u017eeb\u0159\u00ed\u010dk\u016f v \u0159ad\u011b zem\u00ed, selhali jsme po business str\u00e1nce.',
+        'about.p2': 'Pot\u00e9 jsem se zapsal na PhD studium s c\u00edlem studovat psychologick\u00fd dopad pov\u00edd\u00e1n\u00ed si s LLMs, ale v roce \u201922 jsem nepotkal lidi, kte\u0159\u00ed by to brali v\u00e1\u017en\u011b. V\u0161iml jsem si nez\u00e1jmu a rychle ode\u0161el. B\u011bhem t\u00e9 doby jsem pracoval v mal\u00e9m t\u00fdmu s <a href="https://www.forbes.com/profile/akimitsu-sano/" target="_blank" rel="noopener">Akimitsu Sanem</a>, na jeho projektu <a href="https://www.cookwithmoment.com" target="_blank" rel="noopener">Moment</a>.',
+        'about.p3': 'V posledn\u00ed pr\u00e1ci jsem stav\u011bl agentick\u00fd syst\u00e9m pro \u0159\u00edzen\u00ed HR konverzac\u00ed. Byly to 2 roky str\u00e1ven\u00e9 na promptingu, n\u00e1stroj\u00edch a RAG \u2014 a stejn\u011b tenhle text p\u00ed\u0161u ru\u010dn\u011b.',
+        'about.p4': 'Moment\u00e1ln\u011b vedu workshopy AI automatizac\u00ed a stav\u00edm si pro radost. Ned\u00e1vno jsem vytvo\u0159il P2P voice-only chatroulette klon, skill-tree rozhran\u00ed pro modul\u00e1rn\u00ed video kurzy, engine pro fyzik\u00e1ln\u00ed textov\u00e9 animace, nebo voice-over a usage dashboard pro Claude Code.',
+        'about.p5': 'Krom\u011b toho lezu po skal\u00e1ch, \u010dtu o filosofii mysli a p\u00ed\u0161u. Vedlej\u0161\u00ed produkt psan\u00ed je 10k Instagram komunita kolem m\u00e9 poezie.',
+        'projects.label': 'Vybran\u00e9 projekty',
+        'projects.pj.role': 'CTO / Spoluzakladatel \u00b7 2016\u201322',
+        'projects.pj.desc': 'P\u00e1rov\u00e1n\u00ed ingredienc\u00ed pomoc\u00ed word2vec. Cel\u00fd backend od nuly, p\u0159es \u20ac4M v pre-seed investic\u00edch, 150k+ u\u017eivatel\u016f ve 3 end-user aplikac\u00edch a B2B API. Top app store \u017eeb\u0159\u00ed\u010dk\u016f v \u0159ad\u011b zem\u00ed.',
+        'projects.vc.role': 'Osobn\u00ed \u00b7 Prosinec 2025',
+        'projects.vc.desc': 'P2P hlasov\u00fd chatroulette. P\u0159es mikrofon propoj\u00ed dva n\u00e1hodn\u00e9 lidi, bez serveru, p\u0159\u00edmo ze za\u0159\u00edzen\u00ed na za\u0159\u00edzen\u00ed \u2014 minimalistick\u00e9 UI. Minim\u00e1ln\u00ed infrastruktura na Cloudflare Workers a Durable Objects.',
+        'projects.ta.role': 'Osobn\u00ed \u00b7 B\u0159ezen 2026',
+        'projects.ta.desc': 'Fyzik\u00e1ln\u00ed textov\u00e9 animace \u2014 Langevinova dynamika, curl noise particle syst\u00e9my, Verlet integrace, orbit\u00e1ln\u00ed mechanika. Ka\u017ed\u00fd experiment prom\u011bn\u00ed typografii ve fyzick\u00fd objekt, kter\u00fd reaguje na s\u00edly.',
+        'projects.ko.role': 'Osobn\u00ed \u00b7 Leden 2026',
+        'projects.ko.desc': 'Live coding hudebn\u00ed workbench postaven\u00fd na <a href="https://strudel.cc" target="_blank" rel="noopener">strudel.cc</a>. Multi-track mixer s real-time synchronizac\u00ed a audio-reaktivn\u00ed curl noise particle vizualizac\u00ed.',
+        'projects.st.role': 'Osobn\u00ed \u00b7 Prosinec 2025',
+        'projects.st.desc': 'Platforma kurz\u016f ve form\u011b skill tree. DAG-uspo\u0159\u00e1dan\u00e9 video lekce se sledov\u00e1n\u00edm prerekvizit, renderovan\u00e9 jako interaktivn\u00ed graf uzl\u016f.',
+        'projects.tp.role': 'Osobn\u00ed \u00b7 \u00danor 2026',
+        'projects.tp.desc': 'iPhone jako Mac trackpad p\u0159es USB. Rozpozn\u00e1v\u00e1n\u00ed gest, stavov\u00e9 automaty a CGEvent injekce pro nativn\u00ed ovl\u00e1d\u00e1n\u00ed kurzoru.',
+        'projects.in.role': 'Osobn\u00ed \u00b7 \u00danor 2026',
+        'projects.in.desc': 'Pasivn\u00ed API explorer. Zachyt\u00e1v\u00e1 HTTP provoz p\u0159es Electron webRequest zat\u00edmco prohl\u00ed\u017e\u00edte web, s transportem browser session a multi-provider autentizac\u00ed.',
+        'timeline.label': 'Zku\u0161enosti',
+        'timeline.freelance.period': '2025 \u2014 te\u010f',
+        'timeline.freelance.role': 'AI & Automatizace Lektor',
+        'timeline.ikigai.role': 'V\u00fdvoj\u00e1\u0159, Agentick\u00e9 syst\u00e9my',
+        'timeline.reach.role': 'Tech Lead / Produkt',
+        'timeline.cookpad.role': 'Senior Software Engineer',
+        'timeline.pj.role': 'CTO, Spoluzakladatel',
+        'edu.label': 'Vzd\u011bl\u00e1n\u00ed',
+        'edu.msc.degree': 'MSc IT & Cognition',
+        'edu.msc.school': 'Koda\u0148sk\u00e1 Univerzita',
+        'edu.bsc.degree': 'BSc Robotika & Kybernetika',
+        'edu.bsc.school': '\u010cesk\u00e9 vysok\u00e9 u\u010den\u00ed technick\u00e9 v Praze',
+        'footer.authMsg': 'Ahoj Juro, jsi online',
+      }
+    };
+
+    const slideTranslations = {
+      cs: {
+        'The Weaver': { name: 'Tkadlec', desc: '\u0158\u00e1dky se skl\u00e1daj\u00ed z rozpt\u00fdlen\u00fdch znak\u016f a stoupaj\u00ed vzh\u016fru, zat\u00edmco se dole tvo\u0159\u00ed nov\u00e9.' },
+        'Langevin Chaos': { name: 'Langevin\u016fv chaos', desc: 'Langevinova dynamika s gravita\u010dn\u00edmi studnami pro ka\u017ed\u00e9 slovo. Teplota kles\u00e1 se scrollem a zmrazuje term\u00e1ln\u00ed \u0161um.' },
+        'Cloud': { name: 'Oblak', desc: 'Curl noise rozpad. Text kondenzuje z pole \u010d\u00e1stic, dr\u017e\u00ed se a pak se rozpt\u00fdl\u00ed.' },
+        'Text Crumble': { name: 'Droben\u00ed textu', desc: 'S\u00ed\u0165 sp\u0159a\u017een\u00fdch pru\u017ein. Ot\u0159es se \u0161\u00ed\u0159\u00ed p\u0159es vazby mezi sousedy, pak p\u0159eb\u00edr\u00e1 gravitace.' },
+        'Crystallization': { name: 'Krystalizace', desc: 'P\u00edsmena ob\u00edhaj\u00ed ve visk\u00f3zn\u00edm poli a pak sko\u010d\u00ed na pozice m\u0159\u00ed\u017eky, jak scroll ochlad\u00ed syst\u00e9m.' },
+        'Neon Flicker': { name: 'Neonov\u00e9 blik\u00e1n\u00ed', desc: 'Gaussovsk\u00e9 pravd\u011bpodobnostn\u00ed okno se posouvá p\u0159es slova. Ka\u017ed\u00e9 slovo blikne bl\u00edzko st\u0159edu a vyhasne na okraj\u00edch.' },
+        'Pixel Letters': { name: 'Pixelov\u00e1 p\u00edsmena', desc: 'Extrakce pixel\u016f z canvasu pro ka\u017ed\u00e9 p\u00edsmeno. Pixely se radi\u00e1ln\u011b rozpt\u00fdl\u00ed a pak sko\u010d\u00ed zp\u011bt do tvar\u016f glyf\u016f.' },
+        'Text Morph': { name: 'Prom\u011bna textu', desc: 'LCS shoda mezi dv\u011bma fr\u00e1zemi. Sd\u00edlen\u00e9 pixely dr\u017e\u00ed pozici, neshody interpoluj\u00ed p\u0159es Langevin\u016fv \u0161um.' },
+      }
+    };
+
+    const voiceStrings = {
+      cs: {
+        'offline': 'offline',
+        'talk to jura': 'mluv s jurou',
+        'in a call': 'v hovoru',
+        'connecting...': 'p\u0159ipojuji...',
+        'talking...': 'prob\u00edh\u00e1 hovor...',
+        'call ended': 'hovor ukon\u010den',
+        'mic denied': 'mikrofon odep\u0159en',
+        'failed': 'selhalo',
+        'online': 'online',
+      }
+    };
+
+    function setLang(lang) {
+      currentLang = lang;
+      localStorage.setItem('lang', lang);
+      document.documentElement.lang = lang;
+      var dict = translations[lang];
+      if (!dict) return;
+      document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        if (dict[key] !== undefined) el.innerHTML = dict[key];
+      });
+      try { updateLabel(); } catch(e) {}
+      document.querySelectorAll('.lang-toggle input[name="lang"]').forEach(function(r) {
+        r.checked = r.value === lang;
+      });
+    }
+
+    document.querySelectorAll('.lang-toggle input[name="lang"]').forEach(function(radio) {
+      radio.addEventListener('change', function(e) { setLang(e.target.value); });
+    });
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(e => {
         if (e.isIntersecting) {
@@ -386,7 +558,8 @@
 
     function updateLabel() {
       const s = slides[currentSlide];
-      label.innerHTML = s.name + ' <span class="carousel-desc">' + s.desc + '</span>';
+      const t = (slideTranslations[currentLang] && slideTranslations[currentLang][s.name]) || s;
+      label.innerHTML = t.name + ' <span class="carousel-desc">' + t.desc + '</span>';
     }
 
     function resetSlide(idx) {
@@ -407,6 +580,7 @@
     document.querySelector('.carousel-prev').addEventListener('click', () => goTo(currentSlide - 1));
     document.querySelector('.carousel-next').addEventListener('click', () => goTo(currentSlide + 1));
     buildSlides();
+    if (currentLang !== 'en') setLang(currentLang);
 
     const overlay = document.getElementById('carousel-overlay');
     overlay.addEventListener('click', () => {

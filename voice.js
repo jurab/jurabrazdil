@@ -32,7 +32,10 @@ function notify(msg) {
 }
 
 function setPill(text, status) {
-  pillLabel.textContent = text;
+  var translated = (typeof voiceStrings !== 'undefined' && typeof currentLang !== 'undefined' && voiceStrings[currentLang])
+    ? (voiceStrings[currentLang][text] || text)
+    : text;
+  pillLabel.textContent = translated;
   pill.className = 'voice-pill';
   if (status) pill.classList.add(status);
 }

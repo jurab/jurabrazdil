@@ -457,6 +457,37 @@ main {
   transform: scale(1.2);
 }
 
+/* ─── Language toggle ─── */
+
+.lang-toggle {
+  display: inline-flex;
+  gap: 0;
+  margin-top: 48px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.lang-option {
+  cursor: pointer;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  padding: 6px 18px;
+  transition: color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.lang-option input { display: none; }
+
+.lang-option:has(input:checked) {
+  color: var(--fg-bright);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lang-option:hover {
+  color: var(--fg-bright);
+}
+
 /* ─── Hero links ─── */
 
 .hero-links {
