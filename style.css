@@ -694,9 +694,7 @@ main {
 
 /* ─── Physics placeholder ─── */
 
-.physics {
-  padding-top: var(--section-gap);
-}
+.physics {}
 
 .physics-desc {
   font-size: 18px;
@@ -847,15 +845,114 @@ main {
 
 /* ─── Voidchat placeholder ─── */
 
-.voidchat {
-  padding-top: var(--section-gap);
-}
+.voidchat {}
 
 .voidchat-desc {
   font-size: 18px;
   line-height: 1.7;
   max-width: 560px;
   margin-bottom: 40px;
+}
+
+/* ─── Demo accordion ─── */
+
+.demos-accordion {
+  padding-top: var(--section-gap);
+}
+
+.demo-panel + .demo-panel {
+  margin-top: 24px;
+}
+
+.demo-panel-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.demo-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  transition: color 0.3s var(--ease);
+}
+
+.demo-panel-title::before {
+  content: '\203A';
+  font-size: 28px;
+  line-height: 1;
+  color: inherit;
+  flex-shrink: 0;
+  transition: transform 0.3s var(--ease);
+}
+
+.demo-panel.open .demo-panel-title::before {
+  transform: rotate(90deg);
+}
+
+.demo-panel-header:hover .demo-panel-title {
+  color: var(--fg);
+}
+
+.demo-panel-subtitle {
+  font-size: 18px;
+  font-family: 'Libre Baskerville', Georgia, serif;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--muted);
+  opacity: 0.7;
+  margin-left: 12px;
+  transition: opacity 0.4s var(--ease);
+}
+
+.demo-panel.open .demo-panel-subtitle {
+  opacity: 0;
+}
+
+.demo-panel-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s var(--ease), opacity 0.4s var(--ease);
+  opacity: 0;
+}
+
+.demo-panel.open .demo-panel-body {
+  max-height: 1200px;
+  opacity: 1;
+  margin-top: 16px;
+  padding-bottom: 60px;
+}
+
+/* ─── Demo videos ─── */
+
+.demo-video-desc {
+  font-size: 18px;
+  line-height: 1.7;
+  max-width: var(--max-w);
+  margin-bottom: 40px;
+}
+
+.demo-video-embed {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  max-width: var(--max-w);
+  position: relative;
+}
+
+.demo-video-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #000;
 }
 
 /* ─── Timeline ─── */
