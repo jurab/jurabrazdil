@@ -807,7 +807,6 @@ main {
 }
 
 .carousel-overlay:hover {
-  font-size: 34px;
   color: var(--fg-bright);
 }
 
@@ -1129,8 +1128,8 @@ main {
   }
 
   .timeline-entry {
-    grid-template-columns: 1fr;
-    gap: 2px;
+    grid-template-columns: 110px 1fr;
+    gap: 10px;
   }
 
   .project {
