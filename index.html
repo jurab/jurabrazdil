@@ -40,8 +40,14 @@
     <!-- ────────── Hero ────────── -->
     <section id="hero" class="hero">
 
-      <div class="hero-photo reveal">
-        <img src="materials/photo.png" alt="Jura Brázdil">
+      <div class="hero-photo-wrapper reveal">
+        <div class="hero-photo">
+          <img src="materials/photo.png" alt="Jura Brázdil">
+        </div>
+        <span class="voice-pill" id="voice-pill">
+          <span class="voice-pill-dot"></span><span class="voice-pill-label" id="voice-pill-label">offline</span>
+          <span class="voice-tooltip">When I'm online, press to connect with me over voice — instantly.</span>
+        </span>
       </div>
 
       <h1 class="hero-name reveal">Jura Brázdil</h1>
@@ -266,6 +272,9 @@
       <a href="mailto:jura@hey.com">jura@hey.com</a>
       <span class="sep">&middot;</span>
       <a href="https://www.linkedin.com/in/jura-brazdil" target="_blank" rel="noopener">LinkedIn</a>
+      <span class="sep">&middot;</span>
+      <input class="voice-auth" id="voice-auth" type="text" placeholder="..." autocomplete="off" spellcheck="false">
+      <span class="voice-auth-msg hidden" id="voice-auth-msg">Hi Jura, you're online</span>
     </div>
   </footer>
 
@@ -357,6 +366,7 @@
 
     sections.forEach(s => navObserver.observe(s));
   </script>
+  <script src="voice.js"></script>
 
 </body>
 </html>
