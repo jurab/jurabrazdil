@@ -413,6 +413,14 @@ main {
   color: var(--fg-bright);
 }
 
+.gh-icon {
+  width: 12px;
+  height: 12px;
+  vertical-align: -1px;
+  margin-right: 5px;
+  opacity: 0.4;
+}
+
 .project-role {
   font-size: 13px;
   letter-spacing: 0.14em;
