@@ -607,7 +607,8 @@ main {
   border-bottom: 1px solid var(--border);
 }
 
-.hero-tip:hover .hero-tip-box {
+.hero-tip:hover .hero-tip-box,
+.hero-tip.active .hero-tip-box {
   opacity: 1;
   visibility: visible;
   transform: translateX(-50%) translateY(0);
@@ -1140,4 +1141,8 @@ main {
   .voidchat-placeholder {
     min-height: 180px;
   }
+
+  .scroll-arrow { display: none; }
+
+  .demo-panel-subtitle { display: none; }
 }

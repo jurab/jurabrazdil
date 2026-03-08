@@ -587,6 +587,21 @@
       overlay.classList.add('hidden');
     });
 
+    // Toast tap-to-toggle on mobile
+    if ('ontouchstart' in window) {
+      document.querySelectorAll('.hero-tip').forEach(tip => {
+        tip.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const wasOpen = tip.classList.contains('active');
+          document.querySelectorAll('.hero-tip.active').forEach(t => t.classList.remove('active'));
+          if (!wasOpen) tip.classList.add('active');
+        });
+      });
+      document.addEventListener('click', () => {
+        document.querySelectorAll('.hero-tip.active').forEach(t => t.classList.remove('active'));
+      });
+    }
+
     // Side nav
     const dots = document.querySelectorAll('.side-dot');
     const sections = Array.from(dots).map(d => document.getElementById(d.dataset.section));
