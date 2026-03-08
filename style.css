@@ -95,6 +95,7 @@ main {
 .hero > .reveal:nth-child(3) { transition-delay: 0.35s; }
 .hero > .reveal:nth-child(4) { transition-delay: 0.45s; }
 .hero > .reveal:nth-child(5) { transition-delay: 0.55s; }
+.hero > .reveal:nth-child(6) { transition-delay: 0.65s; }
 
 /* ─── Section labels ─── */
 
@@ -170,8 +171,16 @@ main {
   font-style: italic;
   font-size: 22px;
   color: var(--muted-light);
-  margin-bottom: 36px;
+  margin-bottom: 8px;
   letter-spacing: 0.02em;
+}
+
+.hero-location {
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 36px;
 }
 
 /* (hero-meta replaced by hero-links) */
@@ -323,6 +332,30 @@ main {
 .mutuals-avatars a:hover img {
   filter: grayscale(0) brightness(1);
   transform: scale(1.15);
+}
+
+.ig-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted-light);
+  font-size: 17px;
+}
+
+.ig-row svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.ig-private {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
 }
 
 /* ─── About ─── */
