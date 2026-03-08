@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="scrap-title" content="Text Morph">
+  <title>Text Morph</title>
+  <style>
+    @font-face {
+      font-family: 'ADolphin';
+      src: url('../../materials/fonts/ADolphin-Roman.otf') format('opentype');
+      font-weight: normal;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { background: #000; }
+    body {
+      background: #000;
+      min-height: 500vh;
+      font-family: 'ADolphin', Georgia, serif;
+      overscroll-behavior: none;
+    }
+    canvas {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    #measurer {
+      position: fixed;
+      visibility: hidden;
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+  <div id="measurer"></div>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    // === CONFIGURATION ===
+    const TEXT_A = "The map is not";
+    const TEXT_B = "The territory";
+    const FONT_SIZE = 64;
+    const WIDTH = 800;
+    const HEIGHT = 400;
+
+    // Physics
+    const TEMPERATURE_COLD = 0.001;
+    const TEMPERATURE_HOT = 1.2;
+    const DAMPING = 0.15;
+    const WELL_STRENGTH = 0.06;
+    const DT = 1.0;
+
+    // Morph timing (scroll-based)
+    const MORPH_START = 0.15;
+    const MORPH_END = 0.85;
+    const LETTER_STAGGER = 0.08; // Each letter delays by this much
+
+    // ============ HELPERS ============
+
+    function gaussianRandom() {
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random();
+      while (v === 0) v = Math.random();
+      return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+
+    // ============ LCS - LONGEST COMMON SUBSEQUENCE ============
+
+    function lcs(a, b) {
+      const m = a.length, n = b.length;
+      const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          if (a[i-1] === b[j-1]) {
+            dp[i][j] = dp[i-1][j-1] + 1;
+          } else {
+            dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);
+          }
+        }
+      }
+
+      // Backtrack to find matching indices
+      const matchesA = new Set();
+      const matchesB = new Set();
+      const pairs = [];
+      let i = m, j = n;
+      while (i > 0 && j > 0) {
+        if (a[i-1] === b[j-1]) {
+          matchesA.add(i-1);
+          matchesB.add(j-1);
+          pairs.push([i-1, j-1]);
+          i--; j--;
+        } else if (dp[i-1][j] > dp[i][j-1]) {
+          i--;
+        } else {
+          j--;
+        }
+      }
+
+      return { matchesA, matchesB, pairs: pairs.reverse() };
+    }
+
+    // ============ LETTER PIXEL EXTRACTION ============
+
+    function extractLetterPixels(text, fontSize, centerX, centerY) {
+      const measurer = document.getElementById('measurer');
+      measurer.style.fontSize = fontSize + 'px';
+      measurer.style.fontFamily = "'ADolphin', Georgia, serif";
+
+      // Measure total width for centering
+      measurer.textContent = text;
+      const totalWidth = measurer.getBoundingClientRect().width;
+      const startX = centerX - totalWidth / 2;
+
+      const letters = [];
+      let currentX = startX;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        // Measure this character's width
+        measurer.textContent = char;
+        const charWidth = measurer.getBoundingClientRect().width;
+
+        // Skip spaces but track position
+        if (char === ' ') {
+          currentX += charWidth;
+          letters.push({ char, x: currentX, pixels: [] });
+          continue;
+        }
+
+        // Render single letter to temp canvas
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = Math.ceil(charWidth) + 20;
+        tempCanvas.height = Math.ceil(fontSize * 1.5);
+        const ctx = tempCanvas.getContext('2d');
+
+        ctx.font = `${fontSize}px 'ADolphin', Georgia, serif`;
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(char, 10, tempCanvas.height / 2);
+
+        // Scan for pixels
+        const imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        const data = imageData.data;
+        const pixels = [];
+
+        for (let py = 0; py < tempCanvas.height; py++) {
+          for (let px = 0; px < tempCanvas.width; px++) {
+            const idx = (py * tempCanvas.width + px) * 4;
+            const alpha = data[idx + 3];
+            if (alpha > 128) {
+              // Store as offset from letter anchor
+              pixels.push({
+                dx: px - 10,
+                dy: py - tempCanvas.height / 2,
+                alpha: alpha / 255
+              });
+            }
+          }
+        }
+
+        letters.push({
+          char,
+          x: currentX,
+          y: centerY,
+          pixels
+        });
+
+        currentX += charWidth;
+      }
+
+      return letters;
+    }
+
+    // ============ PARTICLE CLASS ============
+
+    class Particle {
+      constructor(x, y, alpha, isMatched = false, letterIndex = 0, totalLetters = 1) {
+        this.startX = x;
+        this.startY = y;
+        this.endX = x;
+        this.endY = y;
+        this.alpha = alpha;
+        this.isMatched = isMatched;
+        this.letterIndex = letterIndex;
+        this.totalLetters = totalLetters;
+
+        this.x = x;
+        this.y = y;
+        this.vx = 0;
+        this.vy = 0;
+
+        this.fadeIn = false;
+        this.fadeOut = false;
+        this.opacity = 1;
+      }
+
+      setEnd(x, y) {
+        this.endX = x;
+        this.endY = y;
+      }
+
+      getTarget(morphProgress) {
+        return {
+          x: this.startX + (this.endX - this.startX) * morphProgress,
+          y: this.startY + (this.endY - this.startY) * morphProgress
+        };
+      }
+
+      // Get this particle's local morph progress (staggered by letter)
+      getLocalProgress(globalProgress) {
+        const staggerOffset = this.letterIndex * LETTER_STAGGER;
+        const localStart = staggerOffset;
+        const localEnd = 1 - (this.totalLetters - 1 - this.letterIndex) * LETTER_STAGGER;
+
+        if (globalProgress <= localStart) return 0;
+        if (globalProgress >= localEnd) return 1;
+        return (globalProgress - localStart) / (localEnd - localStart);
+      }
+
+      update(globalMorphProgress, temperature) {
+        const localProgress = this.getLocalProgress(globalMorphProgress);
+        const target = this.getTarget(localProgress);
+
+        // Temperature based on local progress (peaks at 0.5)
+        const tempCurve = 1 - Math.pow(2 * (localProgress - 0.5), 2);
+        const localTemp = TEMPERATURE_COLD + (temperature - TEMPERATURE_COLD) * Math.max(0, tempCurve);
+
+        // Matched letters get much lower temperature
+        const effectiveTemp = this.isMatched ? localTemp * 0.1 : localTemp;
+
+        // Lock when cold enough
+        const LOCK_THRESHOLD = TEMPERATURE_COLD * 1.5;
+        if (effectiveTemp <= LOCK_THRESHOLD) {
+          this.x = target.x;
+          this.y = target.y;
+          this.vx = 0;
+          this.vy = 0;
+        } else {
+          const dx = target.x - this.x;
+          const dy = target.y - this.y;
+          let fx = dx * WELL_STRENGTH;
+          let fy = dy * WELL_STRENGTH;
+
+          fx -= DAMPING * this.vx;
+          fy -= DAMPING * this.vy;
+
+          const noiseStrength = Math.sqrt(2 * DAMPING * effectiveTemp);
+          fx += noiseStrength * gaussianRandom();
+          fy += noiseStrength * gaussianRandom();
+
+          this.vx += fx * DT;
+          this.vy += fy * DT;
+          this.x += this.vx * DT;
+          this.y += this.vy * DT;
+        }
+
+        // Handle fade based on local progress
+        if (this.fadeIn) {
+          this.opacity = Math.min(1, localProgress * 2);
+        } else if (this.fadeOut) {
+          this.opacity = Math.max(0, 1 - localProgress * 2);
+        }
+      }
+    }
+
+    // ============ PIXEL MATCHING ============
+
+    function matchLetterPixels(lettersA, lettersB) {
+      // Get LCS of the character sequences (excluding spaces)
+      const charsA = lettersA.filter(l => l.char !== ' ').map(l => l.char);
+      const charsB = lettersB.filter(l => l.char !== ' ').map(l => l.char);
+      const { matchesA, matchesB, pairs } = lcs(charsA, charsB);
+
+      const particles = [];
+
+      // Map from filtered index to original letter
+      const realLettersA = lettersA.filter(l => l.char !== ' ');
+      const realLettersB = lettersB.filter(l => l.char !== ' ');
+      const totalLetters = Math.max(realLettersA.length, realLettersB.length);
+
+      // Create matched pairs map
+      const pairMap = new Map();
+      for (const [idxA, idxB] of pairs) {
+        pairMap.set(idxA, idxB);
+      }
+
+      // Process matched letters - pixels stay coherent
+      for (const [idxA, idxB] of pairs) {
+        const letterA = realLettersA[idxA];
+        const letterB = realLettersB[idxB];
+        const letterIdx = idxA; // Use A's index for stagger
+
+        const pixelsA = letterA.pixels;
+        const pixelsB = letterB.pixels;
+        const minPx = Math.min(pixelsA.length, pixelsB.length);
+
+        // Match pixels 1:1 within the letter
+        for (let i = 0; i < minPx; i++) {
+          const pxA = pixelsA[i];
+          const pxB = pixelsB[i];
+
+          const p = new Particle(
+            letterA.x + pxA.dx,
+            letterA.y + pxA.dy,
+            (pxA.alpha + pxB.alpha) / 2,
+            true, // isMatched
+            letterIdx,
+            totalLetters
+          );
+          p.setEnd(letterB.x + pxB.dx, letterB.y + pxB.dy);
+          particles.push(p);
+        }
+
+        // Extra pixels in A: fade out
+        for (let i = minPx; i < pixelsA.length; i++) {
+          const pxA = pixelsA[i];
+          const p = new Particle(
+            letterA.x + pxA.dx,
+            letterA.y + pxA.dy,
+            pxA.alpha,
+            true,
+            letterIdx,
+            totalLetters
+          );
+          p.fadeOut = true;
+          particles.push(p);
+        }
+
+        // Extra pixels in B: fade in
+        for (let i = minPx; i < pixelsB.length; i++) {
+          const pxB = pixelsB[i];
+          const p = new Particle(
+            letterB.x + pxB.dx,
+            letterB.y + pxB.dy,
+            pxB.alpha,
+            true,
+            letterIdx,
+            totalLetters
+          );
+          p.fadeIn = true;
+          p.opacity = 0;
+          particles.push(p);
+        }
+      }
+
+      // Unmatched letters in A: fade out with chaos
+      for (let i = 0; i < realLettersA.length; i++) {
+        if (matchesA.has(i)) continue;
+        const letter = realLettersA[i];
+        for (const px of letter.pixels) {
+          const p = new Particle(
+            letter.x + px.dx,
+            letter.y + px.dy,
+            px.alpha,
+            false, // not matched - will be chaotic
+            i,
+            totalLetters
+          );
+          p.fadeOut = true;
+          particles.push(p);
+        }
+      }
+
+      // Unmatched letters in B: fade in with chaos
+      for (let i = 0; i < realLettersB.length; i++) {
+        if (matchesB.has(i)) continue;
+        const letter = realLettersB[i];
+        for (const px of letter.pixels) {
+          const p = new Particle(
+            letter.x + px.dx,
+            letter.y + px.dy,
+            px.alpha,
+            false,
+            i,
+            totalLetters
+          );
+          p.fadeIn = true;
+          p.opacity = 0;
+          particles.push(p);
+        }
+      }
+
+      return particles;
+    }
+
+    // ============ MAIN ============
+
+    async function init() {
+      const canvas = document.getElementById('canvas');
+      canvas.width = WIDTH;
+      canvas.height = HEIGHT;
+      const ctx = canvas.getContext('2d');
+
+      await document.fonts.ready;
+
+      const centerX = WIDTH / 2;
+      const centerY = HEIGHT / 2;
+
+      // Extract per-letter pixels
+      const lettersA = extractLetterPixels(TEXT_A, FONT_SIZE, centerX, centerY);
+      const lettersB = extractLetterPixels(TEXT_B, FONT_SIZE, centerX, centerY);
+
+      const totalPxA = lettersA.reduce((sum, l) => sum + l.pixels.length, 0);
+      const totalPxB = lettersB.reduce((sum, l) => sum + l.pixels.length, 0);
+
+      // Match pixels with LCS awareness
+      const particles = matchLetterPixels(lettersA, lettersB);
+
+      // Scroll state
+      window.scrollProgress = 0;
+
+      function onScroll() {
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        window.scrollProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+      }
+
+      window.addEventListener('scroll', onScroll, { passive: true });
+
+      function animate() {
+        let morphProgress = 0;
+        if (window.scrollProgress >= MORPH_START && window.scrollProgress <= MORPH_END) {
+          morphProgress = (window.scrollProgress - MORPH_START) / (MORPH_END - MORPH_START);
+        } else if (window.scrollProgress > MORPH_END) {
+          morphProgress = 1;
+        }
+
+        // Pass max temperature - each particle calculates its own based on local progress
+        particles.forEach(p => p.update(morphProgress, TEMPERATURE_HOT));
+
+        // Render
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+        particles.forEach(p => {
+          if (p.opacity > 0.01) {
+            const alpha = p.alpha * p.opacity;
+            ctx.fillStyle = `rgba(232, 228, 217, ${alpha})`;
+            ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
+          }
+        });
+
+        requestAnimationFrame(animate);
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    init();
+  </script>
+</body>
+</html>

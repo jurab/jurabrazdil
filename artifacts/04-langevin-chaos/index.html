@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Crystallization - Langevin</title>
+    <style>
+        @font-face {
+            font-family: 'ADolphin';
+            src: url('../../materials/fonts/ADolphin-Roman.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'ADolphin';
+            src: url('../../materials/fonts/ADolphin-Italic.otf') format('opentype');
+            font-weight: normal;
+            font-style: italic;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            height: 100%;
+            background: #000;
+        }
+
+        body {
+            min-height: 100%;
+            overflow-x: hidden;
+            background: #000;
+            font-family: 'ADolphin', Georgia, serif;
+            color: #e8e4d9;
+        }
+
+        .scroll-container {
+            height: 800vh;
+        }
+
+        html, body {
+            overscroll-behavior: none;
+        }
+
+        .text-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .letter {
+            position: fixed;
+            left: 0;
+            top: 0;
+            font-size: 24px;
+            transition: none;
+            will-change: transform, opacity;
+            pointer-events: none;
+        }
+
+        .word-clickable {
+            position: fixed;
+            cursor: pointer;
+            padding: 10px 5px;
+            z-index: 100;
+        }
+
+        .word-clickable:hover {
+            background: rgba(100, 140, 180, 0.2);
+        }
+
+        .word-clickable.ordered {
+            background: rgba(200, 130, 100, 0.2);
+            cursor: default;
+        }
+
+        .compiled-line {
+            position: fixed;
+            left: 0;
+            top: 0;
+            font-family: 'ADolphin', Georgia, serif;
+            font-size: 24px;
+            color: #e8e4d9;
+            pointer-events: none;
+            opacity: 0;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="scroll-container"></div>
+    <canvas id="wells" style="position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:0;"></canvas>
+    <div class="text-container" id="container"></div>
+
+    <script>
+        // === WORD CONFIGURATION ===
+        const WELLS = {
+            "in": { word: "In" },
+            "the-beginning": { word: "the beginning" },
+            "was1": { word: "was" },
+            "the1": { word: "the" },
+            "word1": { word: "word," },
+            "and": { word: "and" },
+            "the-word": { word: "the word" },
+            "was2": { word: "was" },
+            "chaos": { word: "Chaos.", italic: true, neverSettle: 0.5 }
+        };
+
+        const SENTENCE = ["in", "the-beginning", "was1", "the1", "word1", "and", "the-word", "was2", "chaos"];
+        const ORDER = ["word1", "the1", "was1", "the-beginning", "and", "the-word", "was2", "in", "chaos"];
+
+        const LINE_HEIGHT = 60;
+
+        // Langevin dynamics constants
+        const TEMPERATURE_MAX = 0.3;      // hot = chaos (top of page) - looser jitter
+        const TEMPERATURE_MIN = 0.001;    // cold = crystal (bottom of page) - lower = locks tighter
+        const DAMPING = 0.35;             // friction coefficient (γ in Langevin eq) - higher = more friction
+        const WELL_STRENGTH_MAX = 0.18;   // potential well spring constant at cold - higher = snaps harder
+        const WELL_STRENGTH_MIN = 0.001;  // potential well barely there when hot
+        const REPULSION_STRENGTH = 200;   // Coulomb-like repulsion coefficient (reduced)
+        const REPULSION_RANGE = 60;       // distance below which repulsion kicks in
+        const CHAOS_RADIUS_FACTOR = 0.015;  // initial scatter as fraction of viewport (tight cluster)
+
+        // Verlet needs dt
+        const DT = 1.0;  // timestep (we're in animation frame units)
+
+        let letters = [];
+        let lineData = [];
+        let centerX, centerY;
+        let temperature = TEMPERATURE_MAX;
+        let scrollProgress = 0;
+        let fadeInProgress = 1;
+        const SETTLE_THRESHOLD = 0.3;
+        let startTime = null;
+        let frameCount = 0;
+        let wellsCanvas, wellsCtx;
+        let words = [];  // word data with center positions
+        let wellsById = {};  // map from id to word object
+        const DEBUG_WELLS = false;  // toggle well visualization
+        let customOrder = [];  // for click-to-order sequence
+
+        // Box-Muller for gaussian random
+        function gaussianRandom() {
+            let u = 0, v = 0;
+            while (u === 0) u = Math.random();
+            while (v === 0) v = Math.random();
+            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+
+        class Letter {
+            constructor(char, targetX, targetY, index, total, wordIndex, isItalic = false) {
+                this.char = char;
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.index = index;
+                this.total = total;
+                this.wordIndex = wordIndex;  // which word this letter belongs to
+                this.isItalic = isItalic;
+
+                // Start at target (will be scattered once word center is known)
+                this.x = targetX;
+                this.y = targetY;
+                this.needsScatter = true;
+
+                // Initial velocity (will be set during scatter)
+                this.vx = 0;
+                this.vy = 0;
+
+                // For Verlet: store acceleration
+                this.ax = 0;
+                this.ay = 0;
+
+                // Visual
+                this.opacity = 0;
+                this.baseOpacity = 0.1 + Math.random() * 0.3;  // per-letter variation for texture (0.1-0.4)
+                this.kineticEnergy = 0;
+
+                // Create DOM
+                this.el = document.createElement('span');
+                this.el.className = 'letter';
+                this.el.textContent = char;
+                if (this.isItalic) {
+                    this.el.style.fontStyle = 'italic';
+                }
+                document.getElementById('container').appendChild(this.el);
+            }
+
+            computeForces(allLetters, globalTemp) {
+                let fx = 0, fy = 0;
+
+                // 1. Potential well force (spring towards target)
+                // Well activation based on word's distance from center
+                const word = words[this.wordIndex];
+                const wellActive = word && scrollProgress >= word.activationScroll ? 1 : 0;
+
+                // Per-word effective temperature: active wells cool down faster
+                // How far past activation are we? Map to settle at specific scroll points
+                const settleRange = 0.3;  // how much scroll range a word gets to fully settle
+                const activationProgress = word ? Math.min(1, Math.max(0, (scrollProgress - word.activationScroll) / settleRange)) : 0;
+
+                // neverSettle is now a scale: 0 = fully settles, 1 = never settles (stays at max temp)
+                const neverSettle = word && word.neverSettle ? word.neverSettle : 0;
+                const minTemp = TEMPERATURE_MIN + (TEMPERATURE_MAX - TEMPERATURE_MIN) * neverSettle;
+
+                // Active words get colder, inactive stay at global temp
+                const effectiveTemp = wellActive
+                    ? minTemp + (globalTemp - minTemp) * Math.pow(1 - activationProgress, 3)
+                    : globalTemp;
+
+                // Well strength increases as effective temperature drops
+                const wellStrength = wellActive * (WELL_STRENGTH_MIN +
+                    (WELL_STRENGTH_MAX - WELL_STRENGTH_MIN) * (1 - effectiveTemp / TEMPERATURE_MAX));
+
+                const dx = this.targetX - this.x;
+                const dy = this.targetY - this.y;
+                fx += dx * wellStrength;
+                fy += dy * wellStrength;
+
+                // Store effective temp for noise calculation
+                this.effectiveTemp = effectiveTemp;
+
+                // 2. Inter-letter repulsion (weakens as temp drops)
+                // At high temp, letters strongly repel. At low temp, they can pack tight.
+                // Disabled for first 30 frames to prevent initial explosion
+                const repulsionScale = frameCount < 30 ? 0 : 0.2 + 0.8 * (effectiveTemp / TEMPERATURE_MAX);
+
+                for (const other of allLetters) {
+                    if (other === this) continue;
+
+                    const ox = this.x - other.x;
+                    const oy = this.y - other.y;
+                    const dist = Math.sqrt(ox * ox + oy * oy);
+
+                    if (dist < REPULSION_RANGE && dist > 1) {
+                        // Soft repulsion: F = k / r²
+                        const force = REPULSION_STRENGTH * repulsionScale / (dist * dist);
+                        fx += (ox / dist) * force;
+                        fy += (oy / dist) * force;
+                    }
+                }
+
+                // 3. Damping force: -γv
+                fx -= DAMPING * this.vx;
+                fy -= DAMPING * this.vy;
+
+                // 4. Langevin thermal noise: √(2γkT) * η(t)
+                // η is gaussian white noise - uses effective temp so settled words stay quiet
+                const noiseStrength = Math.sqrt(2 * DAMPING * effectiveTemp);
+                fx += noiseStrength * gaussianRandom();
+                fy += noiseStrength * gaussianRandom();
+
+                return { fx, fy };
+            }
+
+            // Velocity Verlet step 1: update position and half-step velocity
+            verletStep1(dt) {
+                // x(t+dt) = x(t) + v(t)*dt + 0.5*a(t)*dt²
+                this.x += this.vx * dt + 0.5 * this.ax * dt * dt;
+                this.y += this.vy * dt + 0.5 * this.ay * dt * dt;
+
+                // v(t+dt/2) = v(t) + 0.5*a(t)*dt
+                this.vx += 0.5 * this.ax * dt;
+                this.vy += 0.5 * this.ay * dt;
+            }
+
+            // Velocity Verlet step 2: compute new forces and complete velocity update
+            verletStep2(allLetters, temp, dt) {
+                const { fx, fy } = this.computeForces(allLetters, temp);
+
+                // a(t+dt) = F/m (mass = 1)
+                this.ax = fx;
+                this.ay = fy;
+
+                // v(t+dt) = v(t+dt/2) + 0.5*a(t+dt)*dt
+                this.vx += 0.5 * this.ax * dt;
+                this.vy += 0.5 * this.ay * dt;
+
+                // Compute kinetic energy for opacity
+                this.kineticEnergy = 0.5 * (this.vx * this.vx + this.vy * this.vy);
+            }
+
+            updateVisuals(temp) {
+                // Opacity based on distance from target position
+                const dx = this.x - this.targetX;
+                const dy = this.y - this.targetY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                // Normalize distance: 0 = at target, 1 = far away (40px+)
+                const distNormalized = Math.min(1, dist / 40);
+
+                // Far = baseOpacity (textured chaos), close = solid
+                const distOpacity = this.baseOpacity + (1 - distNormalized) * (1 - this.baseOpacity);
+                const targetOpacity = distOpacity * fadeInProgress;
+
+                // Smooth transition
+                this.opacity += (targetOpacity - this.opacity) * 0.1;
+            }
+
+            render() {
+                this.el.style.transform = `translate(${this.x}px, ${this.y}px)`;
+                this.el.style.opacity = this.opacity;
+            }
+
+            get speed() {
+                return Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+            }
+
+            get isSettled() {
+                const atTarget = Math.abs(this.x - this.targetX) < 2 &&
+                                 Math.abs(this.y - this.targetY) < 2;
+                return this.speed < SETTLE_THRESHOLD && atTarget;
+            }
+        }
+
+        function measureLine(text) {
+            const measurer = document.createElement('div');
+            measurer.style.cssText = `
+                position: absolute;
+                visibility: hidden;
+                font-family: 'ADolphin', Georgia, serif;
+                font-size: 24px;
+                white-space: pre;
+            `;
+            document.body.appendChild(measurer);
+
+            // Measure full string width first to get proper kerning
+            measurer.textContent = text;
+            const totalWidth = measurer.getBoundingClientRect().width;
+
+            // Now measure each character position by measuring substrings
+            // Track space widths to expand them
+            const positions = [];
+            let spaceExpansion = 0;
+            for (let i = 0; i < text.length; i++) {
+                measurer.textContent = text.substring(0, i);
+                const x = measurer.getBoundingClientRect().width + spaceExpansion;
+                positions.push({ char: text[i], x });
+
+                // Expand spaces by 2x (add 1x the normal space width)
+                if (text[i] === ' ') {
+                    measurer.textContent = ' ';
+                    const spaceWidth = measurer.getBoundingClientRect().width;
+                    spaceExpansion += spaceWidth * 1;
+                }
+            }
+
+            document.body.removeChild(measurer);
+
+            return { positions, totalWidth };
+        }
+
+        function drawWells() {
+            if (!DEBUG_WELLS) return;
+
+            wellsCtx.clearRect(0, 0, wellsCanvas.width, wellsCanvas.height);
+
+            // Draw each word's well
+            words.forEach(word => {
+                const wellActive = scrollProgress >= word.activationScroll;
+
+                // Draw well center point
+                wellsCtx.beginPath();
+                wellsCtx.arc(word.centerX, word.centerY, wellActive ? 6 : 4, 0, Math.PI * 2);
+                wellsCtx.fillStyle = wellActive ? 'rgba(100, 180, 140, 0.5)' : 'rgba(100, 140, 180, 0.2)';
+                wellsCtx.fill();
+
+                if (wellActive) {
+                    // Draw lines from each letter in this word to the word's well center
+                    word.letters.forEach(l => {
+                        wellsCtx.beginPath();
+                        wellsCtx.moveTo(l.x, l.y);
+                        wellsCtx.lineTo(word.centerX, word.centerY);
+
+                        const dist = Math.sqrt(Math.pow(l.x - word.centerX, 2) + Math.pow(l.y - word.centerY, 2));
+                        const alpha = Math.min(0.3, dist / 150 * 0.3);
+                        wellsCtx.strokeStyle = `rgba(100, 180, 140, ${alpha})`;
+                        wellsCtx.lineWidth = 1;
+                        wellsCtx.stroke();
+                    });
+                }
+            });
+        }
+
+        function init() {
+            // Setup canvas
+            wellsCanvas = document.getElementById('wells');
+            wellsCanvas.width = window.innerWidth;
+            wellsCanvas.height = window.innerHeight;
+            wellsCtx = wellsCanvas.getContext('2d');
+
+            centerX = window.innerWidth / 2;
+            centerY = window.innerHeight / 2;
+
+            // Build sentence from WELLS and SENTENCE config
+            const fullText = SENTENCE.map(id => WELLS[id].word).join(' ');
+            const { positions, totalWidth } = measureLine(fullText);
+
+            // Account for space expansion in total width
+            const lastPos = positions[positions.length - 1];
+            const expandedTotalWidth = lastPos.x + 10;
+
+            const startX = centerX - expandedTotalWidth / 2;
+            const lineY = centerY;
+            const textCenterX = centerX;
+
+            // Create compiled line element
+            const compiledEl = document.createElement('div');
+            compiledEl.className = 'compiled-line';
+            compiledEl.textContent = fullText;
+            compiledEl.style.transform = `translate(${startX}px, ${lineY}px)`;
+            document.getElementById('container').appendChild(compiledEl);
+
+            let globalIndex = 0;
+            let charIndex = 0;
+            const totalChars = fullText.replace(/ /g, '').length;
+            const lineLetters = [];
+
+            // Build words from SENTENCE config
+            SENTENCE.forEach((wellId, sentenceIdx) => {
+                const wellConfig = WELLS[wellId];
+                const wordText = wellConfig.word;
+                const isItalic = wellConfig.italic || false;
+                const neverSettle = wellConfig.neverSettle || false;
+
+                const currentWordLetters = [];
+                let currentWordStartX = null;
+
+                // Process each char in this word
+                for (const char of wordText) {
+                    const pos = positions[charIndex];
+                    const targetX = startX + pos.x;
+                    if (currentWordStartX === null) currentWordStartX = targetX;
+
+                    const wordIndex = words.length;
+                    const letter = new Letter(pos.char, targetX, lineY, globalIndex++, totalChars, wordIndex, isItalic);
+                    letters.push(letter);
+                    lineLetters.push(letter);
+                    currentWordLetters.push(letter);
+                    charIndex++;
+                }
+
+                // Save word
+                const wordEndX = startX + positions[charIndex - 1].x + 10;
+                const wordCenterX = (currentWordStartX + wordEndX) / 2;
+                const wordDistFromCenter = Math.abs(wordCenterX - textCenterX);
+
+                const wordObj = {
+                    id: wellId,
+                    letters: currentWordLetters,
+                    centerX: wordCenterX,
+                    centerY: lineY,
+                    distFromCenter: wordDistFromCenter,
+                    neverSettle: neverSettle
+                };
+
+                words.push(wordObj);
+                wellsById[wellId] = wordObj;
+
+                // Skip the space after word (if not last word)
+                if (sentenceIdx < SENTENCE.length - 1 && charIndex < positions.length && positions[charIndex].char === ' ') {
+                    charIndex++;
+                    }
+                });
+
+                lineData.push({
+                text: fullText,
+                letters: lineLetters,
+                compiledEl: compiledEl,
+                compiled: false,
+                compileProgress: 0
+            });
+
+            // Calculate activation scroll based on ORDER config
+            if (ORDER.length === words.length) {
+                ORDER.forEach((wellId, orderPos) => {
+                    const word = wellsById[wellId];
+                    // Spread activations from 0.15 to 0.95
+                    word.activationScroll = 0.15 + (orderPos / (ORDER.length - 1)) * 0.8;
+                });
+            } else {
+                // Fallback: activate in order
+                console.log(`ORDER length (${ORDER.length}) doesn't match words (${words.length}). Click words to set new order.`);
+                words.forEach((word, i) => {
+                    word.activationScroll = 0.15 + (i / (words.length - 1)) * 0.8;
+                });
+            }
+
+            // Letters start at their target positions - thermal noise will scatter them
+            // No manual scatter needed, the physics does it naturally
+
+            function animate(timestamp) {
+                frameCount++;
+
+                // Temperature from scroll: top = hot, bottom = cold
+                // Use exponential curve for more interesting transition dynamics
+                const t = 1 - scrollProgress;  // invert: scroll down = cool down
+                temperature = TEMPERATURE_MIN + (TEMPERATURE_MAX - TEMPERATURE_MIN) * Math.pow(t, 2);
+
+                // Velocity Verlet: all step1, then all step2
+                letters.forEach(l => l.verletStep1(DT));
+                letters.forEach(l => l.verletStep2(letters, temperature, DT));
+                letters.forEach(l => {
+                    l.updateVisuals(temperature);
+                    l.render();
+                });
+
+                // Draw well visualization
+                drawWells();
+
+                // Line compilation check
+                lineData.forEach(line => {
+                    const allSettled = line.letters.every(l => l.isSettled);
+
+                    if (allSettled && !line.compiled) {
+                        line.compiled = true;
+                    } else if (!allSettled && line.compiled) {
+                        line.compiled = false;
+                    }
+
+                    // Crossfade
+                    if (line.compiled && line.compileProgress < 1) {
+                        line.compileProgress = Math.min(1, line.compileProgress + 0.1);
+                    } else if (!line.compiled && line.compileProgress > 0) {
+                        line.compileProgress = Math.max(0, line.compileProgress - 0.1);
+                    }
+
+                    const p = line.compileProgress;
+                    line.compiledEl.style.opacity = p;
+                    if (p > 0) {
+                        line.letters.forEach(l => {
+                            l.el.style.opacity = l.opacity * (1 - p);
+                        });
+                    }
+                });
+
+                requestAnimationFrame(animate);
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function onScroll() {
+            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+            scrollProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+        }
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+        document.addEventListener('scroll', onScroll, { passive: true });
+        history.scrollRestoration = 'manual';
+
+        document.fonts.ready.then(() => {
+            init();
+            onScroll();
+        });
+    </script>
+</body>
+</html>

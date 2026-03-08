@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Weaver</title>
+    <style>
+        @font-face {
+            font-family: 'ADolphin';
+            src: url('../../materials/fonts/ADolphin-Roman.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            background: #000;
+            color: #c9c9c9;
+            font-family: 'ADolphin', Georgia, serif;
+            font-size: 24px;
+            line-height: 1.8;
+            min-height: 500vh;
+        }
+        .line {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .line .text {
+            visibility: hidden;
+            white-space: nowrap;
+        }
+        .line .chars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            white-space: nowrap;
+        }
+        .char {
+            position: absolute;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="line"><span class="text">This ball of entangled strings,</span></div>
+    <div class="line"><span class="text">like a cobweb folded onto itself</span></div>
+    <div class="line"><span class="text">sits in my stomach, my chest and my mind.</span></div>
+    <div class="line"><span class="text">I've been turning it around for so long</span></div>
+    <div class="line"><span class="text">it feels quite familiar,</span></div>
+    <div class="line"><span class="text">it stretches back throughout the past.</span></div>
+    <div class="line"><span class="text">Turning my back to the future</span></div>
+    <div class="line"><span class="text">I can see the mingle unfold and stretch behind me</span></div>
+    <div class="line"><span class="text">through time like a vine I am hanging on,</span></div>
+    <div class="line"><span class="text">slowly moving backwards into the unknown</span></div>
+    <div class="line"><span class="text">and like a spider I am weaving the rope</span></div>
+    <div class="line"><span class="text">to support the weight of my soul.</span></div>
+    <div class="line"><span class="text">Hanging in the void,</span></div>
+    <div class="line"><span class="text">strands extending back up into the darkness of the past.</span></div>
+    <div class="line"><span class="text">In the distance to my sides there are figures,</span></div>
+    <div class="line"><span class="text">figures obscured by mist and vapour,</span></div>
+    <div class="line"><span class="text">suspended on webs of their own.</span></div>
+    
+
+    <script>
+    (function() {
+        // Force scroll reset
+        history.scrollRestoration = 'manual';
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        
+        const SCATTER_X = 150;
+        const SCATTER_Y = 400;
+        
+        const lineEls = document.querySelectorAll('.line');
+        const allLines = [];
+        
+        lineEls.forEach((lineEl, lineIndex) => {
+            const textEl = lineEl.querySelector('.text');
+            const text = textEl.textContent;
+            
+            // Measure char positions
+            textEl.style.visibility = 'visible';
+            const range = document.createRange();
+            const textNode = textEl.firstChild;
+            const lineRect = textEl.getBoundingClientRect();
+            
+            const chars = [];
+            
+            for (let i = 0; i < text.length; i++) {
+                range.setStart(textNode, i);
+                range.setEnd(textNode, i + 1);
+                const rect = range.getBoundingClientRect();
+                
+                chars.push({
+                    char: text[i],
+                    targetX: rect.left - lineRect.left,
+                    targetY: rect.top - lineRect.top,
+                    scatterBelowX: (Math.random() - 0.5) * SCATTER_X,
+                    scatterBelowY: 200 + Math.random() * SCATTER_Y,
+                    scatterBelowRot: (Math.random() - 0.5) * 90,
+                    scatterAboveX: (Math.random() - 0.5) * SCATTER_X,
+                    scatterAboveY: -(100 + Math.random() * SCATTER_Y),
+                    scatterAboveRot: (Math.random() - 0.5) * 90,
+                    el: null
+                });
+            }
+            
+            textEl.style.visibility = 'hidden';
+            
+            // Create char elements
+            const charsContainer = document.createElement('span');
+            charsContainer.className = 'chars';
+            
+            chars.forEach(c => {
+                const span = document.createElement('span');
+                span.className = 'char';
+                span.textContent = c.char;
+                c.el = span;
+                charsContainer.appendChild(span);
+            });
+            
+            lineEl.appendChild(charsContainer);
+            
+            allLines.push({
+                el: lineEl,
+                chars: chars,
+                index: lineIndex
+            });
+        });
+        
+        function updateLineChars(line, assembleProgress, decompileProgress) {
+            const ap = easeOutCubic(Math.max(0, Math.min(1, assembleProgress)));
+            const dp = easeInCubic(Math.max(0, Math.min(1, decompileProgress)));
+            
+            line.chars.forEach(c => {
+                let x = c.targetX;
+                let y = c.targetY;
+                let rot = 0;
+                let opacity = 1;
+                
+                if (ap < 1) {
+                    x += c.scatterBelowX * (1 - ap);
+                    y += c.scatterBelowY * (1 - ap);
+                    rot += c.scatterBelowRot * (1 - ap);
+                    opacity = 0.3 + 0.7 * ap;
+                } else if (dp > 0) {
+                    x += c.scatterAboveX * dp;
+                    y += c.scatterAboveY * dp;
+                    rot += c.scatterAboveRot * dp;
+                    opacity = 1 - 0.7 * dp;
+                }
+                
+                c.el.style.transform = `translate(${x}px, ${y}px) rotate(${rot}deg)`;
+                c.el.style.opacity = opacity;
+            });
+        }
+        
+        function easeInCubic(t) {
+            return t * t * t;
+        }
+        
+        function easeOutCubic(t) {
+            return 1 - Math.pow(1 - t, 3);
+        }
+        
+        // Timing config - based on line count
+        const numLines = allLines.length;
+        const LINE_OFFSET = 1 / (numLines + 5);        // each line starts this much later
+        const LINE_SCROLL_PORTION = LINE_OFFSET * 5;   // each line's full lifecycle
+        const ASSEMBLE_PORTION = 0.2;                  // portion of lifecycle for assembly
+        
+        function tick() {
+            const scrollY = window.scrollY;
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const scrollProgress = 0.05 + (scrollY / maxScroll) * 0.95;
+            
+            const viewportH = window.innerHeight;
+            
+            allLines.forEach((line, i) => {
+                const lineStart = i * LINE_OFFSET;
+                const lineEnd = lineStart + LINE_SCROLL_PORTION;
+                const assembleEnd = lineStart + LINE_SCROLL_PORTION * ASSEMBLE_PORTION;
+                const decompileStart = lineEnd - LINE_SCROLL_PORTION * ASSEMBLE_PORTION;
+                
+                let assembleProgress = 0;
+                let decompileProgress = 0;
+                let bottomPos = 100;
+                
+                if (scrollProgress < lineStart) {
+                    assembleProgress = 0;
+                    line.el.style.visibility = 'hidden';
+                } else if (scrollProgress < assembleEnd) {
+                    assembleProgress = (scrollProgress - lineStart) / (assembleEnd - lineStart);
+                    line.el.style.visibility = 'visible';
+                } else if (scrollProgress < decompileStart) {
+                    assembleProgress = 1;
+                    const scrollPhase = (scrollProgress - assembleEnd) / (decompileStart - assembleEnd);
+                    bottomPos = 100 + scrollPhase * (viewportH * 0.5);
+                    line.el.style.visibility = 'visible';
+                } else if (scrollProgress < lineEnd) {
+                    assembleProgress = 1;
+                    decompileProgress = (scrollProgress - decompileStart) / (lineEnd - decompileStart);
+                    bottomPos = 100 + (viewportH * 0.5) + decompileProgress * (viewportH * 0.3);
+                    line.el.style.visibility = 'visible';
+                } else {
+                    assembleProgress = 1;
+                    decompileProgress = 1;
+                    line.el.style.visibility = 'hidden';
+                }
+                
+                line.el.style.bottom = bottomPos + 'px';
+                updateLineChars(line, assembleProgress, decompileProgress);
+            });
+            
+            requestAnimationFrame(tick);
+        }
+        
+        allLines.forEach(line => updateLineChars(line, 0, 0));
+        tick();
+    })();
+    </script>
+</body>
+</html>

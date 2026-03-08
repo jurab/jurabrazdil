@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Percolation</title>
+  <style>
+    @font-face {
+      font-family: 'ADolphin';
+      src: url('../../materials/fonts/ADolphinRoman.otf') format('opentype');
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html { background: #000; }
+    body {
+      background: #000;
+      color: #f0f0f0;
+      min-height: 400vh;
+      font-family: 'ADolphin', Georgia, serif;
+    }
+
+    .container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      font-size: 3rem;
+      line-height: 1.4;
+    }
+
+    .line {
+      display: block;
+      margin: 0.2em 0;
+    }
+
+    .letter {
+      display: inline-block;
+      opacity: 0;
+      transition: opacity 0.15s ease-out;
+    }
+
+    .letter.active {
+      opacity: 1;
+    }
+
+    .letter.flickering {
+      animation: flicker 0.1s ease-in-out infinite;
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 0.5; }
+    }
+
+    .letter.space {
+      width: 0.3em;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container" id="text-container"></div>
+
+  <script>
+    const TEXT = [
+      "Dvě bytosti ve tmě",
+      "Já jsem v Tobě",
+      "A Ty ve mně"
+    ];
+
+    // Parameters
+    const FLICKER_CHANCE = 0.02;
+
+    let words = [];
+
+    function init() {
+      const container = document.getElementById('text-container');
+
+      TEXT.forEach((line, lineIdx) => {
+        const lineEl = document.createElement('span');
+        lineEl.className = 'line';
+
+        const lineWords = line.split(' ');
+        lineWords.forEach((word, wordIdxInLine) => {
+          // Add space before word (except first word)
+          if (wordIdxInLine > 0) {
+            const spaceEl = document.createElement('span');
+            spaceEl.className = 'letter space';
+            spaceEl.textContent = '\u00A0';
+            lineEl.appendChild(spaceEl);
+          }
+
+          const wordLetters = [];
+          for (let i = 0; i < word.length; i++) {
+            const letterEl = document.createElement('span');
+            letterEl.className = 'letter';
+            letterEl.textContent = word[i];
+            wordLetters.push({
+              el: letterEl,
+              flickering: false
+            });
+            lineEl.appendChild(letterEl);
+          }
+
+          words.push({
+            letters: wordLetters,
+            active: false
+          });
+        });
+
+        container.appendChild(lineEl);
+      });
+
+      // Start animation loop
+      animate();
+    }
+
+    function getScrollProgress() {
+      const maxScroll = document.body.scrollHeight - window.innerHeight;
+      return 0.05 + (window.scrollY / maxScroll) * 0.95;
+    }
+
+    function animate() {
+      const scrollProgress = getScrollProgress();
+
+      // Probability distribution center moves with scroll
+      // Start ahead of text, end past it so everything fades out
+      const center = scrollProgress * (words.length + 10) - 4;
+      const sigma = 1.5; // width of the gaussian
+
+      words.forEach((word, idx) => {
+        // Gaussian probability based on distance from center
+        const distance = idx - center;
+        const probability = Math.exp(-(distance * distance) / (2 * sigma * sigma));
+        
+        // Word is solid only when near center
+        const isActive = probability > 0.7;
+
+        word.letters.forEach(letter => {
+          letter.el.classList.remove('active', 'flickering');
+
+          if (isActive) {
+            letter.el.classList.add('active');
+            letter.flickering = false;
+          } else if (probability > 0.05) {
+            // Flicker zone - both approaching and fading words
+            if (!letter.flickering && Math.random() < FLICKER_CHANCE * probability * 5) {
+              letter.flickering = true;
+              letter.el.classList.add('flickering');
+              // Stop flickering after random duration
+              const duration = 100 + Math.random() * 400;
+              setTimeout(() => {
+                letter.flickering = false;
+                letter.el.classList.remove('flickering');
+              }, duration);
+            } else if (letter.flickering) {
+              letter.el.classList.add('flickering');
+            }
+          }
+          // else: probability < 0.05, letter is dark
+        });
+
+        word.active = isActive;
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    // Init on load
+    init();
+  </script>
+</body>
+</html>

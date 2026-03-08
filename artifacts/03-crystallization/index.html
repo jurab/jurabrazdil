@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Crystallization</title>
+    <style>
+        @font-face {
+            font-family: 'ADolphin';
+            src: url('../../materials/fonts/ADolphin-Roman.otf') format('opentype');
+            font-weight: normal;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            height: 100%;
+            background: #000;
+        }
+
+        body {
+            min-height: 100%;
+            overflow-x: hidden;
+            background: #000;
+            font-family: 'ADolphin', Georgia, serif;
+            color: #e8e4d9;
+        }
+        
+        .scroll-container {
+            height: 800vh;
+        }
+        
+        html, body {
+            overscroll-behavior: none;
+        }
+        
+        .text-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .letter {
+            position: fixed;
+            left: 0;
+            top: 0;
+            font-size: 24px;
+            transition: none;
+            will-change: transform, opacity;
+            pointer-events: none;
+        }
+        
+        .compiled-line {
+            position: fixed;
+            left: 0;
+            top: 0;
+            font-family: 'ADolphin', Georgia, serif;
+            font-size: 24px;
+            color: #e8e4d9;
+            pointer-events: none;
+            opacity: 0;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="scroll-container"></div>
+    <div class="text-container" id="container"></div>
+
+    <script>
+        const LINES = [
+            "Mluví",
+            "Počítače",
+            "Pomoc",
+            "Co mam",
+            "Dělat"
+        ];
+        const LINE_HEIGHT = 60;  // px between lines
+        
+        // Physics constants
+        const VISCOSITY = 0.92;  // drag coefficient (0-1, higher = more honey)
+        const PUSH_STRENGTH = 2.5;  // how hard crystallized letters push others
+        const CHAOS_RADIUS = 300;  // initial scatter radius
+        const CRYSTAL_SPEED = 0.016;  // how fast letters snap to position when crystallizing
+        const DISPERSION_STRENGTH = 50;  // how hard letters explode when decrystallizing
+        const GRAVITY_STRENGTH = 0.00015;  // pull towards center
+        const ORBITAL_BIAS = 0.8;  // how much velocity gets converted to tangential (0-1)
+        
+        let letters = [];
+        let lineData = [];  // track letters per line and compiled state
+        let centerX, centerY;
+        let scrollProgress = 0;
+        let lastScrollProgress = 0;
+        let fadeInProgress = 1;
+        const SETTLE_THRESHOLD = 0.5;  // velocity below this = settled
+        let startTime = null;
+        
+        class Letter {
+            constructor(char, targetX, targetY, index, total) {
+                this.char = char;
+                this.targetX = targetX;
+                this.targetY = targetY;
+                this.index = index;
+                this.total = total;
+                
+                // Start position: scattered in a circle
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * CHAOS_RADIUS;
+                this.x = centerX + Math.cos(angle) * radius;
+                this.y = centerY + Math.sin(angle) * radius;
+                
+                // Velocity for physics - start with tangential velocity for orbit
+                const orbitSpeed = 0.5 + Math.random() * 0.5;
+                this.vx = -Math.sin(angle) * orbitSpeed;
+                this.vy = Math.cos(angle) * orbitSpeed;
+                
+                // State
+                this.crystallized = false;
+                this.opacity = 0;
+                this.baseOpacity = 0.15 + Math.random() * 0.1;  // target opacity in chaos state
+                
+                // Distance from center (for crystallization order)
+                this.distFromCenter = Math.sqrt(
+                    Math.pow(targetX - centerX, 2) + 
+                    Math.pow(targetY - centerY, 2)
+                );
+                
+                // Create DOM element
+                this.el = document.createElement('span');
+                this.el.className = 'letter';
+                this.el.textContent = char;
+                document.getElementById('container').appendChild(this.el);
+            }
+            
+            // When should this letter crystallize? Based on distance from center
+            getCrystallizationThreshold() {
+                // Normalize distance, closer to center = lower threshold
+                const maxDist = Math.max(...letters.map(l => l.distFromCenter));
+                const normalized = this.distFromCenter / maxDist;
+                // Letters at center crystallize at ~10% scroll, edge at ~70%
+                return 0.1 + normalized * 0.6;
+            }
+            
+            update(scrollProgress, scrollDelta, allLetters) {
+                const threshold = this.getCrystallizationThreshold();
+                
+                // Crystallization is now continuous, not binary
+                // How "crystallized" is this letter? 0 = chaos, 1 = fully formed
+                const crystallization = Math.max(0, Math.min(1, 
+                    (scrollProgress - threshold + 0.1) / 0.15
+                ));
+                
+                const wasFullyCrystallized = this.crystallized && this.lastCrystallization > 0.9;
+                this.crystallized = crystallization > 0.5;
+                this.lastCrystallization = crystallization;
+                
+                // Dispersion: when scrolling back up and losing crystallization, explode outward
+                if (scrollDelta < 0 && crystallization < 0.9) {
+                    // Dispersion force proportional to scroll speed and inverse of crystallization
+                    const disperseForce = Math.abs(scrollDelta) * DISPERSION_STRENGTH * (1 - crystallization);
+                    
+                    // Random horizontal, but MUCH more vertical spread
+                    this.vx += (Math.random() - 0.5) * disperseForce * 0.5;
+                    this.vy += (Math.random() - 0.5) * disperseForce * 3;
+                }
+                
+                // Blend between chaos position and target position
+                const targetOpacity = (this.baseOpacity + crystallization * (1 - this.baseOpacity)) * fadeInProgress;
+                this.opacity += (targetOpacity - this.opacity) * 0.1;
+                
+                if (crystallization > 0) {
+                    // Pull towards target position (strength based on crystallization)
+                    const pullStrength = CRYSTAL_SPEED * crystallization;
+                    this.vx += (this.targetX - this.x) * pullStrength;
+                    this.vy += (this.targetY - this.y) * pullStrength;
+                }
+                
+                // Get pushed by more-crystallized letters
+                let pushX = 0, pushY = 0;
+                
+                for (const other of allLetters) {
+                    if (other !== this && other.crystallized) {
+                        const dx = this.x - other.x;
+                        const dy = this.y - other.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (dist < 100 && dist > 0) {
+                            // Push strength reduced by own crystallization
+                            const force = PUSH_STRENGTH * (1 - crystallization) / (dist * dist) * 100;
+                            pushX += (dx / dist) * force;
+                            pushY += (dy / dist) * force;
+                        }
+                    }
+                }
+                
+                // Apply push as acceleration
+                this.vx += pushX;
+                this.vy += pushY;
+                
+                // Apply viscous drag
+                this.vx *= VISCOSITY;
+                this.vy *= VISCOSITY;
+                
+                // Update position
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Brownian motion (reduced when crystallized)
+                const drift = 0.5 * (1 - crystallization);
+                this.x += (Math.random() - 0.5) * drift;
+                this.y += (Math.random() - 0.5) * drift;
+                
+                // Orbital motion and mutual repulsion (only when not crystallized)
+                if (crystallization < 0.9) {
+                    const dx = centerX - this.x;
+                    const dy = centerY - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    
+                    // Circular orbit: apply centripetal force to maintain orbit
+                    // v = sqrt(GM/r), for circular orbit centripetal = v²/r
+                    const targetOrbitSpeed = Math.sqrt(GRAVITY_STRENGTH * 500000 / Math.max(dist, 50));
+                    
+                    // Tangent direction (perpendicular to radius)
+                    const tangentX = -dy / dist;
+                    const tangentY = dx / dist;
+                    
+                    // Current tangential velocity
+                    const currentTangentVel = this.vx * tangentX + this.vy * tangentY;
+                    
+                    // Nudge towards target orbital speed
+                    const tangentAdjust = (targetOrbitSpeed - Math.abs(currentTangentVel)) * 0.02;
+                    const direction = currentTangentVel >= 0 ? 1 : -1;
+                    this.vx += tangentX * tangentAdjust * direction;
+                    this.vy += tangentY * tangentAdjust * direction;
+                    
+                    // Centripetal force to keep in orbit
+                    const centripetalForce = (currentTangentVel * currentTangentVel) / dist;
+                    this.vx += (dx / dist) * centripetalForce * 0.3;
+                    this.vy += (dy / dist) * centripetalForce * 0.3;
+                    
+                    // Mutual repulsion between ALL letters (not just crystallized)
+                    for (const other of allLetters) {
+                        if (other !== this) {
+                            const ox = this.x - other.x;
+                            const oy = this.y - other.y;
+                            const oDist = Math.sqrt(ox * ox + oy * oy);
+                            
+                            if (oDist < 60 && oDist > 0) {
+                                // Soft repulsion
+                                const repelForce = 0.5 / (oDist * oDist) * 100;
+                                this.vx += (ox / oDist) * repelForce;
+                                this.vy += (oy / oDist) * repelForce;
+                            }
+                        }
+                    }
+                }
+                
+                this.render();
+            }
+            
+            render() {
+                this.el.style.transform = `translate(${this.x}px, ${this.y}px)`;
+                this.el.style.opacity = this.opacity;
+            }
+        }
+        
+        function measureLine(text) {
+            // Create hidden measurer
+            const measurer = document.createElement('div');
+            measurer.style.cssText = `
+                position: absolute;
+                visibility: hidden;
+                font-family: 'ADolphin', Georgia, serif;
+                font-size: 24px;
+                white-space: pre;
+            `;
+            document.body.appendChild(measurer);
+            
+            // Measure each character position
+            const positions = [];
+            let currentX = 0;
+            
+            for (const char of text) {
+                measurer.textContent = char;
+                const width = measurer.getBoundingClientRect().width;
+                positions.push({ char, x: currentX, width });
+                currentX += width;
+            }
+            
+            const totalWidth = currentX;
+            document.body.removeChild(measurer);
+            
+            return { positions, totalWidth };
+        }
+        
+        function init() {
+            centerX = window.innerWidth / 2;
+            centerY = window.innerHeight / 2;
+            
+            const totalHeight = (LINES.length - 1) * LINE_HEIGHT;
+            const startY = centerY - totalHeight / 2;
+            
+            let globalIndex = 0;
+            const totalChars = LINES.join('').replace(/ /g, '').length;
+            
+            LINES.forEach((line, lineIndex) => {
+                const { positions, totalWidth } = measureLine(line);
+                const startX = centerX - totalWidth / 2;
+                const lineY = startY + lineIndex * LINE_HEIGHT;
+                
+                // Create compiled line element (hidden initially)
+                const compiledEl = document.createElement('div');
+                compiledEl.className = 'compiled-line';
+                compiledEl.textContent = line;
+                compiledEl.style.transform = `translate(${startX}px, ${lineY}px)`;
+                document.getElementById('container').appendChild(compiledEl);
+                
+                const lineLetters = [];
+                positions.forEach((pos) => {
+                    if (pos.char !== ' ') {
+                        const targetX = startX + pos.x;
+                        const letter = new Letter(pos.char, targetX, lineY, globalIndex++, totalChars);
+                        letters.push(letter);
+                        lineLetters.push(letter);
+                    }
+                });
+                
+                lineData.push({
+                    text: line,
+                    letters: lineLetters,
+                    compiledEl: compiledEl,
+                    compiled: false
+                });
+            });
+            
+            // Animation loop
+            function animate(timestamp) {
+                
+                const scrollDelta = scrollProgress - lastScrollProgress;
+                lastScrollProgress = scrollProgress;
+                letters.forEach(letter => letter.update(scrollProgress, scrollDelta, letters));
+                
+                // Check for line compilation
+                lineData.forEach(line => {
+                    // All letters in line must be crystallized and settled
+                    const allSettled = line.letters.every(l => {
+                        const speed = Math.sqrt(l.vx * l.vx + l.vy * l.vy);
+                        const atTarget = Math.abs(l.x - l.targetX) < 2 && Math.abs(l.y - l.targetY) < 2;
+                        return l.crystallized && speed < SETTLE_THRESHOLD && atTarget;
+                    });
+                    
+                    if (allSettled && !line.compiled) {
+                        line.compiled = true;
+                        line.compileProgress = 0;
+                    } else if (!allSettled && line.compiled) {
+                        line.compiled = false;
+                    }
+                    
+                    // Crossfade animation
+                    if (line.compiled && line.compileProgress < 1) {
+                        line.compileProgress = Math.min(1, (line.compileProgress || 0) + 0.1);
+                    } else if (!line.compiled && line.compileProgress > 0) {
+                        line.compileProgress = Math.max(0, (line.compileProgress || 0) - 0.1);
+                    }
+                    
+                    // Apply crossfade: letters fade out, compiled fades in, sum = 1
+                    const p = line.compileProgress || 0;
+                    line.compiledEl.style.opacity = p;
+                    if (p > 0) {
+                        line.letters.forEach(l => {
+                            l.el.style.opacity = l.opacity * (1 - p);
+                        });
+                    }
+                });
+                
+                requestAnimationFrame(animate);
+            }
+            requestAnimationFrame(animate);
+        }
+        
+        // Scroll handler - use both window and document
+        function onScroll() {
+            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+            scrollProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+        }
+        
+        window.addEventListener('scroll', onScroll, { passive: true });
+        document.addEventListener('scroll', onScroll, { passive: true });
+        
+        // Prevent scroll restoration
+        history.scrollRestoration = 'manual';
+        
+        // Wait for font then init
+        document.fonts.ready.then(() => {
+            init();
+            onScroll(); // Initial call
+        });
+    </script>
+</body>
+</html>

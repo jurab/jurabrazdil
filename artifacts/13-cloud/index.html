@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="scrap-title" content="Cloud">
+    <title>Cloud - Curl Noise Dissolution</title>
+    <style>
+        @font-face {
+            font-family: 'ADolphin';
+            src: url('../../materials/fonts/ADolphin-Roman.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'ADolphin';
+            src: url('../../materials/fonts/ADolphin-Italic.otf') format('opentype');
+            font-style: italic;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            min-height: 500vh;
+            font-family: -apple-system, sans-serif;
+        }
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        #measurer {
+            position: fixed;
+            visibility: hidden;
+            white-space: pre;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="measurer"></div>
+
+    <script>
+    // === CONFIG ===
+    const TEXTS = [
+`Before the signal
+there was noise
+and the noise was enough`,
+
+`What condenses
+was always there
+waiting for a surface`,
+
+`Every pattern
+a temporary
+agreement`
+    ];
+    let textIndex = 0;
+    const FONT_SIZE = 48;
+    const FONT_FAMILY = "ADolphin";
+    const ITALIC_FONT = "ADolphin";
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const simplex = new SimplexNoise();
+
+    let width, height, centerX, centerY;
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        centerX = width / 2;
+        centerY = height / 2;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Parameters
+    const params = {
+        scale: 130,
+        speed: 2.6,
+        evolution: 0.005,
+        fade: 0.12
+    };
+
+    // === BEAT SYNC ===
+    const BPM = 144;
+    const BEAT_MS = 60000 / BPM; // ~417ms
+    let beatCount = 0;
+    let lastBeatTime = 0;
+    let beatStartTime = 0; // when music/beats started
+
+    // Beat effect states (decay over time)
+    let flashIntensity = 0;      // z-spike
+    let driftAngle = 0;          // current drift direction
+    let driftIntensity = 0;      // drift strength
+    let attractionInvert = 0;    // push-away multiplier
+    let scalePulse = 0;          // noise scale multiplier
+
+    function updateBeat(now) {
+        if (beatStartTime === 0) return; // not started yet
+
+        const elapsed = now - beatStartTime;
+        const currentBeat = Math.floor(elapsed / BEAT_MS);
+
+        if (currentBeat > beatCount) {
+            // New beat!
+            beatCount = currentBeat;
+            lastBeatTime = now;
+
+            // // Every beat: flash (dip) + drift
+            // flashIntensity = 0.85;
+            // driftAngle += Math.PI / 2;
+            // driftIntensity = 6;
+
+            // // Every 4th beat: attraction invert
+            // if (beatCount % 4 === 0) {
+            //     attractionInvert = 1.5;
+            //     driftIntensity = 12;
+            // }
+
+            // // Every 16th beat: scale pulse
+            // if (beatCount % 16 === 0) {
+            //     scalePulse = 1.0;
+            // }
+        }
+
+        // Decay effects
+        flashIntensity *= 0.85;
+        driftIntensity *= 0.9;
+        attractionInvert *= 0.92;
+        scalePulse *= 0.95;
+    }
+
+    // === CURL NOISE ===
+    let time = 0;
+
+    function curl(x, y) {
+        const eps = 0.0001;
+        const n1 = simplex.noise2D(x + eps, y + time);
+        const n2 = simplex.noise2D(x - eps, y + time);
+        const n3 = simplex.noise2D(x, y + eps + time);
+        const n4 = simplex.noise2D(x, y - eps + time);
+
+        const a = (n1 - n2) / (2 * eps);
+        const b = (n3 - n4) / (2 * eps);
+
+        return [b, -a];
+    }
+
+    // === TEXT PIXEL EXTRACTION ===
+    function extractTextPixels(text, fontSize, centerX, centerY) {
+        const measurer = document.getElementById('measurer');
+
+        const lines = text.split('\n');
+        const lineHeight = fontSize * 2.2;
+        const totalHeight = lines.length * lineHeight;
+        const startY = centerY - totalHeight / 2;
+        const lastLineIdx = lines.length - 1;
+
+        // Measure max line width to center the block
+        let maxLineWidth = 0;
+        for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+            const isLastLine = lineIdx === lastLineIdx;
+            measurer.style.fontSize = fontSize + 'px';
+            measurer.style.fontFamily = isLastLine ? ITALIC_FONT : FONT_FAMILY;
+            measurer.style.fontStyle = isLastLine ? 'italic' : 'normal';
+            measurer.textContent = lines[lineIdx] || ' ';
+            maxLineWidth = Math.max(maxLineWidth, measurer.getBoundingClientRect().width);
+        }
+        const blockLeft = centerX - maxLineWidth / 2;
+
+        const pixels = [];
+
+        for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+            const line = lines[lineIdx];
+            const lineY = startY + lineIdx * lineHeight + lineHeight / 2;
+            const isLastLine = lineIdx === lastLineIdx;
+            const fontFamily = isLastLine ? ITALIC_FONT : FONT_FAMILY;
+            const fontStyle = isLastLine ? 'italic' : 'normal';
+
+            // Set measurer font for this line
+            measurer.style.fontSize = fontSize + 'px';
+            measurer.style.fontFamily = fontFamily;
+            measurer.style.fontStyle = fontStyle;
+
+            // Left-aligned within centered block
+            let currentX = blockLeft;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+
+                // Measure char width
+                measurer.textContent = char;
+                const charWidth = measurer.getBoundingClientRect().width;
+
+                if (char === ' ') {
+                    currentX += charWidth;
+                    continue;
+                }
+
+                // Render to temp canvas
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = Math.ceil(charWidth) + 20;
+                tempCanvas.height = Math.ceil(fontSize * 1.5);
+                const tempCtx = tempCanvas.getContext('2d');
+
+                tempCtx.font = `${fontStyle} ${fontSize}px ${fontFamily}`;
+                tempCtx.textBaseline = 'middle';
+                tempCtx.fillStyle = '#fff';
+                tempCtx.fillText(char, 10, tempCanvas.height / 2);
+
+                // Scan for pixels
+                const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                const data = imageData.data;
+
+                for (let py = 0; py < tempCanvas.height; py++) {
+                    for (let px = 0; px < tempCanvas.width; px++) {
+                        const idx = (py * tempCanvas.width + px) * 4;
+                        const alpha = data[idx + 3];
+                        if (alpha > 128) {
+                            const worldX = currentX + (px - 10);
+                            const worldY = lineY + (py - tempCanvas.height / 2);
+                            pixels.push({
+                                x: worldX,
+                                y: worldY,
+                                homeX: worldX,
+                                homeY: worldY,
+                                alpha: alpha / 255,
+                                z: 1, // 1 = visible, 0 = faded into depth
+                                lineIdx: lineIdx,
+                                dying: false
+                            });
+                        }
+                    }
+                }
+
+                currentX += charWidth;
+            }
+        }
+
+        return pixels;
+    }
+
+    // === INIT ===
+    let particles = [];
+    let numLines = 3; // default for 3-line stanzas
+
+    async function init() {
+        await document.fonts.ready;
+
+        // Pre-extract to get numLines
+        const textPixels = extractTextPixels(TEXTS[0], FONT_SIZE, centerX, centerY);
+        numLines = Math.max(...textPixels.map(p => p.lineIdx)) + 1;
+
+        // Initialize arrays but no particles yet
+        lineAttraction = new Array(numLines).fill(1.0);
+        lineTransitions = new Array(numLines).fill(null);
+        pendingPixelsByLine = new Array(numLines).fill(null).map(() => []);
+
+        // Clear and start animation loop
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+        animate();
+
+        // Auto-start: spawn initial text immediately
+        spawnInitialText();
+    }
+
+    function spawnInitialText() {
+        // Start the beat!
+        beatStartTime = performance.now();
+        beatCount = 0;
+
+        // Spawn text 0 particles below targets (rise and fade in like regular transitions)
+        const textPixels = extractTextPixels(TEXTS[0], FONT_SIZE, centerX, centerY);
+        const SPAWN_BELOW = 150;
+
+        // Stagger spawn per line like regular transitions
+        for (let i = 0; i < numLines; i++) {
+            setTimeout(() => {
+                const linePixels = textPixels.filter(p => p.lineIdx === i);
+                for (const p of linePixels) {
+                    particles.push({
+                        x: p.homeX + (Math.random() - 0.5) * 60,
+                        y: p.homeY + SPAWN_BELOW + Math.random() * 50,
+                        homeX: p.homeX,
+                        homeY: p.homeY,
+                        alpha: p.alpha,
+                        z: 0, // start invisible, fade in
+                        lineIdx: p.lineIdx,
+                        dying: false
+                    });
+                }
+                // Set up transition so fade-in logic works
+                lineTransitions[i] = {
+                    progress: 0,
+                    prepared: true,
+                    lastSpawnProgress: 0,
+                    startTime: performance.now()
+                };
+                // Start with low attraction for turbulence (like regular transitions)
+                lineAttraction[i] = 0.5;
+            }, i * LINE_DELAY);
+        }
+
+    }
+
+    // Transition animation state - per line
+    const LINE_DELAY = 500; // ms delay between lines
+    const SPAWN_DELAY = 2; // extra delay (in progress units) before spawning new text
+    let lineTransitions = []; // separate transition state per line
+    let pendingPixelsByLine = []; // pending new pixels per line
+    let lineAttraction = []; // per-line attraction values
+
+    function startTransition(targetIndex) {
+        if (lineTransitions[0]) return; // Already transitioning
+
+        // Use target index if provided, otherwise advance cyclically
+        textIndex = targetIndex !== undefined ? targetIndex : (textIndex + 1) % TEXTS.length;
+
+        // Schedule each line to start with staggered delay
+        for (let i = 0; i < numLines; i++) {
+            setTimeout(() => {
+                for (const p of particles) {
+                    if (p.lineIdx === i) p.dying = true;
+                }
+                lineTransitions[i] = {
+                    progress: 0,
+                    prepared: false,
+                    lastSpawnProgress: 0,
+                    startTime: performance.now()
+                };
+            }, i * LINE_DELAY);
+        }
+    }
+
+    function updateTransitionForLine(lineIdx) {
+        const trans = lineTransitions[lineIdx];
+        if (!trans) return;
+
+        trans.progress += 0.02;
+
+        const dyingParticles = particles.filter(p => p.dying && p.lineIdx === lineIdx);
+
+        // Prepare new pixels for this line when dying ones are partially faded
+        if (!trans.prepared && dyingParticles.length > 0) {
+            const avgDyingZ = dyingParticles.reduce((sum, p) => sum + p.z, 0) / dyingParticles.length;
+            if (avgDyingZ <= 0.5) {
+                // Extract just this line from the new text
+                const allNewPixels = extractTextPixels(TEXTS[textIndex], FONT_SIZE, centerX, centerY);
+                pendingPixelsByLine[lineIdx] = allNewPixels.filter(p => p.lineIdx === lineIdx);
+                trans.prepared = true;
+                trans.lastSpawnProgress = trans.progress;
+            }
+        }
+
+        // Spawn new pixels for this line (with extra delay + per-line stagger)
+        // LINE_DELAY ms ≈ 0.6 progress units at 60fps (500ms * 60fps * 0.02 progress/frame / 1000)
+        if (trans.prepared && pendingPixelsByLine[lineIdx].length > 0) {
+            const lineStaggerProgress = lineIdx * 0.6; // same stagger as dissolve
+            if (trans.progress - trans.lastSpawnProgress >= SPAWN_DELAY + lineStaggerProgress) {
+                spawnPixelsForLine(lineIdx);
+                trans.lastSpawnProgress = trans.progress;
+            }
+        }
+
+        // Check if this line's transition is complete
+        const remainingDying = particles.filter(p => p.dying && p.lineIdx === lineIdx).length;
+        const newOnes = particles.filter(p => !p.dying && p.lineIdx === lineIdx);
+        const allNewVisible = newOnes.length > 0 && newOnes.every(p => p.z >= 0.99);
+        const allSpawned = pendingPixelsByLine[lineIdx].length === 0;
+
+        if (remainingDying === 0 && trans.prepared && allSpawned && allNewVisible) {
+            for (const p of particles) {
+                if (p.lineIdx === lineIdx) p.z = 1;
+            }
+            lineTransitions[lineIdx] = null;
+        }
+    }
+
+    function spawnPixelsForLine(lineIdx) {
+        const pending = pendingPixelsByLine[lineIdx];
+        if (pending.length === 0) return;
+
+        const SPAWN_BELOW = 150;
+        // Spawn all at once for this line
+        for (const target of pending) {
+            particles.push({
+                x: target.homeX + (Math.random() - 0.5) * 60,
+                y: target.homeY + SPAWN_BELOW + Math.random() * 50,
+                homeX: target.homeX,
+                homeY: target.homeY,
+                alpha: target.alpha,
+                z: 0,
+                lineIdx: target.lineIdx,
+                dying: false
+            });
+        }
+
+        pendingPixelsByLine[lineIdx] = [];
+    }
+
+    function updateTransition() {
+        for (let i = 0; i < numLines; i++) {
+            updateTransitionForLine(i);
+        }
+
+        // Manage attraction per line
+        for (let i = 0; i < numLines; i++) {
+            const dyingForLine = particles.filter(p => p.dying && p.lineIdx === i);
+            if (dyingForLine.length > 0) {
+                const targetAtt = 0.5;
+                lineAttraction[i] += (targetAtt - lineAttraction[i]) * 0.04;
+            } else if (lineTransitions[i]) {
+                // Still transitioning but no dying - raise attraction
+                lineAttraction[i] += (1.0 - lineAttraction[i]) * 0.005;
+            } else {
+                // No transition active for this line
+                lineAttraction[i] += (1.0 - lineAttraction[i]) * 0.01;
+            }
+        }
+
+        // Remove dead particles
+        particles = particles.filter(p => !p.dying || p.z > 0.01);
+
+    }
+
+    // === SCROLL-DRIVEN TRANSITIONS ===
+    let currentScrollZone = 0; // 0, 1, or 2 (one per stanza)
+
+    window.addEventListener('scroll', () => {
+        const scrollFraction = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+        const zone = Math.min(Math.floor(scrollFraction * TEXTS.length), TEXTS.length - 1);
+
+        if (zone !== currentScrollZone) {
+            currentScrollZone = zone;
+            // Only trigger transition if we're moving to a different text
+            if (zone !== textIndex) {
+                startTransition(zone);
+            }
+        }
+    });
+
+    // === ANIMATION ===
+    function animate() {
+        const now = performance.now();
+        updateBeat(now);
+        updateTransition();
+        time += params.evolution;
+
+        // Fade trail
+        ctx.fillStyle = `rgba(0, 0, 0, ${params.fade})`;
+        ctx.fillRect(0, 0, width, height);
+
+        for (const p of particles) {
+            // Check if this particle's line has an active transition
+            const lineTrans = lineTransitions[p.lineIdx];
+            const transitionActive = lineTrans !== null;
+
+            // Use per-line attraction
+            let att = lineAttraction[p.lineIdx] ?? 1.0;
+
+            // Distance to home
+            const dx = p.homeX - p.x;
+            const dy = p.homeY - p.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            // Snap to home when attraction is very high and transition not active for this particle
+            const LOCK_THRESHOLD = 0.98;
+            const isLocked = att >= LOCK_THRESHOLD && !transitionActive;
+
+            if (isLocked) {
+                // Locked particles get drift (visual only, position stays at home)
+                const linePhase = p.lineIdx * 0.3;
+                const lockedDrift = driftIntensity * 1.25 * Math.max(0, 1 - linePhase); // 2.5x boost
+                p.x = p.homeX + Math.cos(driftAngle) * lockedDrift;
+                p.y = p.homeY + Math.sin(driftAngle) * lockedDrift;
+            } else {
+                // Per-line phase offset for beat effects (line 0 = immediate, line 2 = delayed)
+                const linePhase = p.lineIdx * 0.15; // 0.15 = ~50ms at 60fps
+                const effectMultiplier = Math.max(0, 1 - linePhase);
+
+                // Distance-weighted intensity (locked particles feel less, loose ones feel more)
+                const distWeight = Math.min(dist / 50, 1); // 0 at home, 1 at 50px+
+
+                // Scale pulse affects noise sampling
+                const pulseScale = params.scale * (1 + scalePulse * effectMultiplier);
+
+                // Curl velocity
+                const [cx, cy] = curl(p.x / pulseScale, p.y / pulseScale);
+
+                // Blend
+                const curlStrength = (1 - att) * params.speed;
+                let vx = cx * curlStrength;
+                let vy = cy * curlStrength;
+
+                // Attraction (with invert on beat)
+                const invertedAtt = att - attractionInvert * effectMultiplier * (0.3 + distWeight * 0.7);
+                if (dist > 0.5) {
+                    vx += (dx / dist) * invertedAtt * 2;
+                    vy += (dy / dist) * invertedAtt * 2;
+                }
+
+                // Drift on beat
+                const driftX = Math.cos(driftAngle) * driftIntensity * effectMultiplier * (0.2 + distWeight * 0.8);
+                const driftY = Math.sin(driftAngle) * driftIntensity * effectMultiplier * (0.2 + distWeight * 0.8);
+                vx += driftX;
+                vy += driftY;
+
+                // Buoyancy - smoke rises, stronger when faded (low z)
+                const buoyancy = (1 - p.z) * 4.0;
+                vy -= buoyancy;
+
+                p.x += vx;
+                p.y += vy;
+            }
+
+            // Z-depth evolution
+            if (transitionActive) {
+                // Distance from home affects fade speed
+                const distFactor = Math.min(dist / 100, 1); // Normalize, cap at 100px
+
+                // Curl noise adds organic variation to z
+                const zNoise = simplex.noise3D(p.x / params.scale, p.y / params.scale, time * 2);
+
+                if (p.dying) {
+                    // Dying particles fade OUT (z decreases)
+                    const fadeSpeed = 0.012 * (0.5 + distFactor) * (1 + zNoise * 0.3);
+                    p.z = Math.max(0, p.z - fadeSpeed);
+                } else {
+                    // New particles fade IN (z increases)
+                    const fadeSpeed = 0.01 * (1.5 - distFactor * 0.5) * (1 + zNoise * 0.3);
+                    p.z = Math.min(1, p.z + fadeSpeed);
+                }
+            }
+
+            // Draw 1x1 pixel - z controls visibility, flash dips opacity on beat
+            const flash = flashIntensity * Math.max(0, 1 - p.lineIdx * 0.3); // per-line phase
+            const brightness = Math.max(0.1, p.z * (1 - flash)); // dip, don't go fully black
+            ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha * 0.9 * brightness})`;
+            ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    init();
+    </script>
+</body>
+</html>

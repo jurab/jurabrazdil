@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="scrap-title" content="Pixel Letters">
+  <title>Pixel Letters</title>
+  <style>
+    @font-face {
+      font-family: 'ADolphin';
+      src: url('../../materials/fonts/ADolphin-Roman.otf') format('opentype');
+      font-weight: normal;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000;
+      min-height: 800vh;
+      font-family: 'ADolphin', Georgia, serif;
+    }
+    canvas {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    #measurer {
+      position: fixed;
+      visibility: hidden;
+      white-space: pre;
+      font-size: 48px;
+      font-family: 'ADolphin', Georgia, serif;
+    }
+
+  </style>
+</head>
+<body>
+  <div id="measurer"></div>
+  <canvas id="canvas"></canvas>
+  
+
+
+  <script>
+    const TEXT = [
+      "V každým z nás je zrůda",
+      "Každej máme šrámy"
+    ];
+    const FONT_SIZE = 48;
+    const LINE_HEIGHT = 70;
+    const WIDTH = 800;
+    const HEIGHT = 400;
+
+    // ============ EASING ============
+    
+    const ease = t => {
+      // Quick snap with slight settle
+      if (t < 0.7) return t / 0.7 * 1.1;
+      return 1.1 - 0.1 * ((t - 0.7) / 0.3);
+    };
+    
+    // Fixed params
+    const PARAMS = {
+      scatterDist: 106,
+      scatterVar: 126,
+      pixelStagger: 0.05,
+      letterStagger: 0.5,
+      windowSize: 0.42
+    };
+
+    // ============ DOM MEASUREMENT ============
+    
+    function measureText(lines, fontSize) {
+      const measurer = document.getElementById('measurer');
+      measurer.style.fontSize = fontSize + 'px';
+      
+      const letters = [];
+      const words = [];
+      const lineData = [];
+      
+      lines.forEach((lineText, lineIdx) => {
+        const y = HEIGHT / 2 - (lines.length - 1) * LINE_HEIGHT / 2 + lineIdx * LINE_HEIGHT;
+        
+        // Measure full line width for centering
+        measurer.textContent = lineText;
+        const lineWidth = measurer.getBoundingClientRect().width;
+        const lineStartX = (WIDTH - lineWidth) / 2;
+        
+        // Measure each character
+        const lineLetters = [];
+        const lineWords = [];
+        let currentWord = { letters: [], startIdx: letters.length };
+        
+        for (let i = 0; i < lineText.length; i++) {
+          // Measure position by measuring substring
+          measurer.textContent = lineText.substring(0, i);
+          const xOffset = measurer.getBoundingClientRect().width;
+          
+          // Measure this char's width
+          measurer.textContent = lineText[i];
+          const charWidth = measurer.getBoundingClientRect().width;
+          
+          const letter = {
+            char: lineText[i],
+            x: lineStartX + xOffset,
+            y: y,
+            width: charWidth,
+            height: fontSize,
+            lineIdx,
+            wordIdx: words.length + lineWords.length,
+            idx: letters.length,
+            pixels: [] // will be filled by canvas pass
+          };
+          
+          if (lineText[i] === ' ') {
+            // End current word, start new one
+            if (currentWord.letters.length > 0) {
+              currentWord.endIdx = letters.length - 1;
+              lineWords.push(currentWord);
+            }
+            currentWord = { letters: [], startIdx: letters.length + 1 };
+          } else {
+            currentWord.letters.push(letter);
+          }
+          
+          letters.push(letter);
+          lineLetters.push(letter);
+        }
+        
+        // Don't forget last word
+        if (currentWord.letters.length > 0) {
+          currentWord.endIdx = letters.length - 1;
+          lineWords.push(currentWord);
+        }
+        
+        lineData.push({ y, letters: lineLetters, words: lineWords });
+        words.push(...lineWords);
+      });
+      
+      return { letters, words, lines: lineData };
+    }
+
+    // ============ PIXEL EXTRACTION ============
+    
+    function extractPixels(letters, fontSize) {
+      // Temp canvas for per-letter rendering
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = WIDTH;
+      tempCanvas.height = HEIGHT;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      tempCtx.font = `${fontSize}px 'ADolphin', Georgia, serif`;
+      tempCtx.textBaseline = 'middle';
+      tempCtx.fillStyle = '#fff';
+      
+      let totalPixels = 0;
+      
+      letters.forEach(letter => {
+        if (letter.char === ' ') return;
+        
+        // Clear and render just this letter
+        tempCtx.clearRect(0, 0, WIDTH, HEIGHT);
+        tempCtx.fillText(letter.char, letter.x, letter.y);
+        
+        // Scan for white pixels in the letter's bounding area (with padding)
+        const pad = 10;
+        const x0 = Math.max(0, Math.floor(letter.x - pad));
+        const y0 = Math.max(0, Math.floor(letter.y - fontSize / 2 - pad));
+        const x1 = Math.min(WIDTH, Math.ceil(letter.x + letter.width + pad));
+        const y1 = Math.min(HEIGHT, Math.ceil(letter.y + fontSize / 2 + pad));
+        
+        const imageData = tempCtx.getImageData(x0, y0, x1 - x0, y1 - y0);
+        const data = imageData.data;
+        
+        // Sample pixels (skip some for performance)
+        const sampleRate = 1; // 1 = every pixel, 2 = every other, etc.
+        
+        for (let py = 0; py < y1 - y0; py += sampleRate) {
+          for (let px = 0; px < x1 - x0; px += sampleRate) {
+            const i = (py * (x1 - x0) + px) * 4;
+            const alpha = data[i + 3];
+            
+            if (alpha > 128) {
+              // Store as offset from letter anchor
+              letter.pixels.push({
+                dx: px + x0 - letter.x,
+                dy: py + y0 - letter.y,
+                alpha: alpha / 255
+              });
+            }
+          }
+        }
+        
+        totalPixels += letter.pixels.length;
+      });
+      
+      console.log(`Extracted ${totalPixels} pixels from ${letters.filter(l => l.char !== ' ').length} letters`);
+      return totalPixels;
+    }
+
+    // ============ REVEAL EFFECT ============
+    
+    function createRevealEffect(canvas, letters, words) {
+      const ctx = canvas.getContext('2d');
+      
+      const totalWords = words.length;
+      
+      // Pre-calculate random values for pixels (these don't change)
+      words.forEach((word) => {
+        word.letters.forEach((letter) => {
+          letter.pixels.forEach(p => {
+            p.randomAngle = Math.random() * Math.PI * 2;
+            p.randomNorm = Math.random(); // 0-1, will be scaled by params
+            p.randomDelayNorm = Math.random(); // 0-1, will be scaled by params
+          });
+        });
+      });
+      
+      // Build flat list of all letters with their global position
+      const allLetters = [];
+      words.forEach(word => {
+        word.letters.forEach(letter => {
+          allLetters.push(letter);
+        });
+      });
+      const totalLetters = allLetters.length;
+      
+      // Assign each letter its position in the global timeline
+      allLetters.forEach((letter, idx) => {
+        letter.globalPosition = idx / (totalLetters - 1 || 1);
+      });
+      
+      return function render(progress) {
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        
+        // Window-based visibility: letters appear and disappear
+        const windowSize = PARAMS.windowSize;
+        const letterWindow = PARAMS.letterStagger;
+        
+        allLetters.forEach((letter) => {
+          const letterPosition = letter.globalPosition;
+          
+          // Distance from current progress (window center)
+          const distFromCenter = Math.abs(progress - letterPosition);
+          
+          // Trapezoid window: flat top (100% solid), then linear falloff
+          // |‾‾‾‾‾‾|  <- plateau (full opacity)
+          // /        \  <- ramps
+          const plateauHalf = windowSize * 0.3;  // 30% of window is flat top
+          const rampSize = (windowSize / 2) - plateauHalf;
+          
+          let visibility;
+          if (distFromCenter <= plateauHalf) {
+            // In the plateau - fully solid
+            visibility = 1;
+          } else if (distFromCenter <= windowSize / 2) {
+            // On the ramp - linear falloff
+            visibility = 1 - (distFromCenter - plateauHalf) / rampSize;
+          } else {
+            visibility = 0;
+          }
+          
+          if (visibility === 0) return;
+          
+          // Determine if we're revealing (approaching) or dissolving (past center)
+          const isRevealing = progress < letterPosition;
+          
+          // Letter progress based on visibility
+          let letterProgress = visibility;
+            
+            letter.pixels.forEach(p => {
+              // Per-pixel stagger using param
+              const pixelDelay = p.randomDelayNorm * PARAMS.pixelStagger;
+              const adjustedProgress = Math.max(0, Math.min(1, (letterProgress - pixelDelay) / (1 - pixelDelay)));
+              
+              // Apply easing
+              const eased = ease(adjustedProgress);
+              
+              // Calculate scatter distance using params
+              const dist = PARAMS.scatterDist + p.randomNorm * PARAMS.scatterVar;
+              
+              // Calculate position - start scattered, end at target
+              const scatter = 1 - eased;
+              const x = letter.x + p.dx + Math.cos(p.randomAngle) * dist * scatter;
+              const y = letter.y + p.dy + Math.sin(p.randomAngle) * dist * scatter;
+              
+              // Fade in
+              const alpha = p.alpha * Math.max(0, Math.min(1, eased));
+              
+              if (alpha > 0.01) {
+                ctx.fillStyle = `rgba(177, 177, 177, ${alpha})`;
+                ctx.fillRect(x, y, 1, 1);
+              }
+            });
+        });
+      };
+    }
+
+    // ============ MAIN ============
+    
+    async function init() {
+      const canvas = document.getElementById('canvas');
+      canvas.width = WIDTH;
+      canvas.height = HEIGHT;
+      
+      
+      // Wait for font
+      await document.fonts.ready;
+      
+      // DOM measurement pass
+      const { letters, words, lines } = measureText(TEXT, FONT_SIZE);
+      
+      // Canvas pixel extraction pass
+      const totalPixels = extractPixels(letters, FONT_SIZE);
+      
+      // Create effect
+      const render = createRevealEffect(canvas, letters, words);
+      
+      // Scroll binding
+      let progress = 0;
+      let targetProgress = 0;
+      
+      function onScroll() {
+        const maxScroll = document.body.scrollHeight - window.innerHeight;
+        targetProgress = window.scrollY / maxScroll;
+      }
+      
+      window.addEventListener('scroll', onScroll, { passive: true });
+      
+      function animate() {
+        progress += (targetProgress - progress) * 0.1;
+        render(progress);
+        
+        requestAnimationFrame(animate);
+      }
+      
+      animate();
+    }
+    
+    init();
+  </script>
+</body>
+</html>

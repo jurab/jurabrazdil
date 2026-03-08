@@ -151,8 +151,15 @@
     <section class="physics reveal">
       <div class="section-label">Physics &times; Typography</div>
       <p class="physics-desc">A collection of scroll-driven text animations built with real physics &mdash; Langevin dynamics, curl noise particle systems, orbital mechanics, thermal simulations. Each experiment turns typography into a physical object that responds to forces.</p>
-      <div class="carousel-placeholder">
-        <div class="placeholder-inner">Interactive demos &mdash; coming soon</div>
+      <div class="carousel">
+        <div class="carousel-viewport">
+          <button class="carousel-btn carousel-prev" aria-label="Previous">&larr;</button>
+          <div class="carousel-track" id="carousel-track"></div>
+          <button class="carousel-btn carousel-next" aria-label="Next">&rarr;</button>
+        </div>
+        <div class="carousel-info">
+          <span class="carousel-label" id="carousel-label"></span>
+        </div>
       </div>
     </section>
 
@@ -224,6 +231,59 @@
       });
     }, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Carousel
+    const slides = [
+      { name: 'The Weaver', dir: '02-the-weaver', desc: 'Lines assemble from scattered characters and drift upward as new ones form below.' },
+      { name: 'Langevin Chaos', dir: '04-langevin-chaos', desc: 'Langevin dynamics with per-word gravity wells. Temperature drops with scroll, freezing thermal noise.' },
+      { name: 'Cloud', dir: '13-cloud', desc: 'Curl noise dissolution. Text condenses from particle field, holds, then disperses on the next beat.' },
+      { name: 'Text Crumble', dir: '01-text-crumble', desc: 'Coupled spring network. Shake propagates through neighbor bonds, then gravity takes over.' },
+      { name: 'Crystallization', dir: '03-crystallization', desc: 'Letters orbit in a viscous field, then snap to lattice positions as scroll cools the system.' },
+      { name: 'Neon Flicker', dir: '05-neon-flicker', desc: 'Gaussian probability window slides across words. Each word flickers on near the center and fades at the tails.' },
+      { name: 'Pixel Letters', dir: '07-pixel-letters', desc: 'Canvas pixel extraction per letter. Pixels scatter radially, then snap back into glyph shapes.' },
+      { name: 'Text Morph', dir: '08-text-morph', desc: 'LCS match between two phrases. Shared pixels hold position, unmatched ones interpolate via Langevin noise.' },
+    ];
+
+    let currentSlide = 0;
+    const track = document.getElementById('carousel-track');
+    const label = document.getElementById('carousel-label');
+
+    function buildSlides() {
+      slides.forEach((s, i) => {
+        const slide = document.createElement('div');
+        slide.className = 'carousel-slide' + (i === 0 ? ' active' : '');
+        slide.dataset.src = 'artifacts/' + s.dir + '/';
+        track.appendChild(slide);
+      });
+      loadSlide(0);
+      updateLabel();
+    }
+
+    function loadSlide(idx) {
+      const slide = track.children[idx];
+      if (slide.querySelector('iframe')) return;
+      const iframe = document.createElement('iframe');
+      iframe.src = slide.dataset.src;
+      slide.appendChild(iframe);
+    }
+
+    function updateLabel() {
+      const s = slides[currentSlide];
+      label.innerHTML = s.name + ' <span class="carousel-desc">' + s.desc + '</span>';
+    }
+
+    function goTo(idx) {
+      const slideEls = track.querySelectorAll('.carousel-slide');
+      slideEls[currentSlide].classList.remove('active');
+      currentSlide = (idx + slides.length) % slides.length;
+      slideEls[currentSlide].classList.add('active');
+      loadSlide(currentSlide);
+      updateLabel();
+    }
+
+    document.querySelector('.carousel-prev').addEventListener('click', () => goTo(currentSlide - 1));
+    document.querySelector('.carousel-next').addEventListener('click', () => goTo(currentSlide + 1));
+    buildSlides();
   </script>
 
 </body>

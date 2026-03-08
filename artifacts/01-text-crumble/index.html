@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Crumble Demo</title>
+  <style>
+    @font-face {
+      font-family: 'ADolphin';
+      src: url('../../materials/fonts/ADolphin-Roman.otf') format('opentype');
+      font-weight: normal;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      color: #b1b1b1;
+      font-family: 'ADolphin', Georgia, serif;
+      min-height: 300vh; /* scroll space */
+    }
+    
+    .poem-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      line-height: 1.4;
+      text-align: center;
+    }
+    
+    .poem-line {
+      position: relative;
+      display: block;
+      margin: 0.2em 0;
+    }
+    
+    /* original text - for measuring, hidden after compile */
+    .poem-line .original {
+      visibility: hidden;
+      white-space: pre;
+    }
+    
+    /* compiled chars layer */
+    .poem-line .chars {
+      position: absolute;
+      top: 0;
+      left: 0;
+      white-space: pre;
+    }
+    
+    .char {
+      position: absolute;
+      display: inline-block;
+      transition: none;
+    }
+    
+  </style>
+</head>
+<body>
+  <div class="poem-container">
+    <span class="poem-line"><span class="original">Nothing lasts</span></span>
+    <span class="poem-line"><span class="original">and nothing is lost</span></span>
+  </div>
+  
+
+  <script>
+    // ============================================
+    // TEXT COMPILER - measures char positions
+    // ============================================
+    
+    function compileText(lineElement) {
+      const original = lineElement.querySelector('.original');
+      const text = original.textContent;
+      
+      // create range for measuring
+      const range = document.createRange();
+      const textNode = original.firstChild;
+      
+      const chars = [];
+      const lineRect = original.getBoundingClientRect();
+      
+      for (let i = 0; i < text.length; i++) {
+        range.setStart(textNode, i);
+        range.setEnd(textNode, i + 1);
+        
+        const rect = range.getBoundingClientRect();
+        
+        chars.push({
+          char: text[i],
+          x: rect.left - lineRect.left,
+          y: rect.top - lineRect.top,
+          width: rect.width,
+          height: rect.height
+        });
+      }
+      
+      return { text, chars, lineRect };
+    }
+    
+    function buildCharElements(lineElement, compiled) {
+      // create chars container
+      const charsContainer = document.createElement('span');
+      charsContainer.className = 'chars';
+      
+      compiled.chars.forEach((c, i) => {
+        const span = document.createElement('span');
+        span.className = 'char';
+        span.textContent = c.char;
+        span.style.left = c.x + 'px';
+        span.style.top = c.y + 'px';
+        span.dataset.index = i;
+        span.dataset.baseX = c.x;
+        span.dataset.baseY = c.y;
+        charsContainer.appendChild(span);
+      });
+      
+      lineElement.appendChild(charsContainer);
+      
+      return charsContainer;
+    }
+    
+    // ============================================
+    // CRUMBLE EFFECT
+    // ============================================
+    
+    function createCrumbleEffect(charElements) {
+      // precompute random values for each char
+      const charData = Array.from(charElements).map((el, i) => {
+        const baseX = parseFloat(el.dataset.baseX);
+        const baseY = parseFloat(el.dataset.baseY);
+        
+        return {
+          el,
+          baseX,
+          baseY,
+          // shake params
+          shakeFreqX: 15 + Math.random() * 10,
+          shakeFreqY: 18 + Math.random() * 10,
+          shakeAmpX: 2 + Math.random() * 3,
+          shakeAmpY: 1 + Math.random() * 2,
+          shakePhase: Math.random() * Math.PI * 2,
+          // fall params
+          fallDelay: i * 0.03 + Math.random() * 0.1, // stagger from left
+          fallRotation: (Math.random() - 0.5) * 720,
+          fallX: (Math.random() - 0.5) * 100,
+          fallY: 200 + Math.random() * 150,
+        };
+      });
+      
+      // return update function
+      return function update(progress) {
+        // 0-0.4: static
+        // 0.4-0.7: shake (increasing intensity)
+        // 0.7-1.0: fall
+        
+        const shakeStart = 0.4;
+        const fallStart = 0.7;
+        
+        charData.forEach(c => {
+          let x = c.baseX;
+          let y = c.baseY;
+          let rotation = 0;
+          let opacity = 1;
+          
+          const t = performance.now() / 1000; // time for oscillation
+          
+          if (progress < shakeStart) {
+            // static - do nothing
+          } else if (progress < fallStart) {
+            // shake phase
+            const shakeProgress = (progress - shakeStart) / (fallStart - shakeStart);
+            const intensity = easeInQuad(shakeProgress);
+            
+            x += Math.sin(t * c.shakeFreqX + c.shakePhase) * c.shakeAmpX * intensity;
+            y += Math.sin(t * c.shakeFreqY + c.shakePhase) * c.shakeAmpY * intensity;
+            rotation = Math.sin(t * 12 + c.shakePhase) * 3 * intensity;
+          } else {
+            // fall phase - shake continues at full intensity
+            const rawFallProgress = (progress - fallStart) / (1 - fallStart);
+            const fallProgress = Math.max(0, (rawFallProgress - c.fallDelay) / (1 - c.fallDelay));
+            const easedFall = easeInQuad(Math.min(1, fallProgress));
+            
+            // shake at full intensity
+            const shakeX = Math.sin(t * c.shakeFreqX + c.shakePhase) * c.shakeAmpX;
+            const shakeY = Math.sin(t * c.shakeFreqY + c.shakePhase) * c.shakeAmpY;
+            const shakeRot = Math.sin(t * 12 + c.shakePhase) * 3;
+            
+            x += shakeX + c.fallX * easedFall;
+            y += shakeY + c.fallY * easedFall;
+            rotation = shakeRot + c.fallRotation * easedFall;
+            opacity = 1 - easedFall;
+          }
+          
+          c.el.style.transform = `translate(${x - c.baseX}px, ${y - c.baseY}px) rotate(${rotation}deg)`;
+          c.el.style.opacity = opacity;
+        });
+      };
+    }
+    
+    function easeInQuad(t) {
+      return t * t;
+    }
+    
+    // ============================================
+    // INIT
+    // ============================================
+    
+    const effects = [];
+    
+    document.querySelectorAll('.poem-line').forEach(line => {
+      const compiled = compileText(line);
+      const charsContainer = buildCharElements(line, compiled);
+      const charElements = charsContainer.querySelectorAll('.char');
+      const effect = createCrumbleEffect(charElements);
+      effects.push(effect);
+    });
+    
+    // scroll binding
+    let animationFrame;
+    
+    function onScroll() {
+      const scrollY = window.scrollY;
+      const maxScroll = document.body.scrollHeight - window.innerHeight;
+      const progress = Math.min(1, scrollY / maxScroll);
+      
+      effects.forEach(effect => effect(progress));
+    }
+    
+    // use rAF for smooth updates during shake
+    function tick() {
+      onScroll();
+      animationFrame = requestAnimationFrame(tick);
+    }
+    
+    tick();
+  </script>
+</body>
+</html>
