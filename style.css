@@ -644,7 +644,7 @@ main {
   border-left: 1px solid var(--border);
   padding: 20px 0 20px 28px;
   margin-bottom: 12px;
-  transition: border-color 0.3s var(--ease);
+  transition: border-color 0.3s var(--ease), opacity 0.7s var(--ease), transform 0.7s var(--ease);
 }
 
 .project:hover {
