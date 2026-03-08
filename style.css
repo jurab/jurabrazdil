@@ -151,6 +151,7 @@ main {
 .hero > .reveal:nth-child(5) { transition-delay: 0.55s; }
 .hero > .reveal:nth-child(6) { transition-delay: 0.55s; }
 .hero > .reveal:nth-child(7) { transition-delay: 0.65s; }
+.hero > .reveal:nth-child(8) { transition-delay: 0.75s; }
 
 /* ─── Section labels ─── */
 
@@ -486,6 +487,24 @@ main {
 
 .lang-option:hover {
   color: var(--fg-bright);
+}
+
+.agents-btn {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 5px 16px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  text-decoration: none;
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease), opacity 0.7s var(--ease), transform 0.7s var(--ease);
+}
+
+.agents-btn:hover {
+  color: var(--fg-bright);
+  border-color: var(--fg-bright);
 }
 
 /* ─── Hero links ─── */
