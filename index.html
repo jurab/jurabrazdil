@@ -26,10 +26,19 @@
     <rect width="100%" height="100%" filter="url(#grain)"/>
   </svg>
 
+  <!-- Side nav -->
+  <nav class="side-nav" id="side-nav">
+    <a href="javascript:void(0)" data-section="hero" class="side-dot active" aria-label="Hero"><span class="side-label">Top</span></a>
+    <a href="javascript:void(0)" data-section="physics" class="side-dot" aria-label="Demos"><span class="side-label">Demos</span></a>
+    <a href="javascript:void(0)" data-section="about" class="side-dot" aria-label="About"><span class="side-label">About</span></a>
+    <a href="javascript:void(0)" data-section="projects" class="side-dot" aria-label="Projects"><span class="side-label">Projects</span></a>
+    <a href="javascript:void(0)" data-section="timeline" class="side-dot" aria-label="Experience"><span class="side-label">Experience</span></a>
+  </nav>
+
   <main>
 
     <!-- ────────── Hero ────────── -->
-    <section class="hero">
+    <section id="hero" class="hero">
 
       <div class="hero-photo reveal">
         <img src="materials/photo.png" alt="Jura Brázdil">
@@ -83,12 +92,38 @@
         </a>
       </div>
 
-      <a class="scroll-arrow" href="javascript:void(0)" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'})" aria-label="Scroll down">
+      <a class="scroll-arrow" href="javascript:void(0)" onclick="document.getElementById('physics').scrollIntoView({behavior:'smooth'})" aria-label="Scroll down">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 5v14M5 12l7 7 7-7"/>
         </svg>
       </a>
 
+    </section>
+
+    <!-- ────────── Physics × Typography ────────── -->
+    <section id="physics" class="physics reveal">
+      <div class="section-label">Physics &times; Typography</div>
+      <p class="physics-desc">A collection of scroll-driven text animations built with real physics &mdash; Langevin dynamics, curl noise particle systems, orbital mechanics, thermal simulations. Each experiment turns typography into a physical object that responds to forces.</p>
+      <div class="carousel">
+        <div class="carousel-track-wrapper">
+          <div class="carousel-track" id="carousel-track"></div>
+          <div class="carousel-overlay" id="carousel-overlay">click &amp; scroll</div>
+        </div>
+        <div class="carousel-controls">
+          <button class="carousel-btn carousel-prev" aria-label="Previous">&larr;</button>
+          <span class="carousel-label" id="carousel-label"></span>
+          <button class="carousel-btn carousel-next" aria-label="Next">&rarr;</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────── Voidchat ────────── -->
+    <section id="voidchat" class="voidchat reveal">
+      <div class="section-label">voidchat</div>
+      <p class="voidchat-desc">P2P voice-only chatroulette. Two strangers connect and talk &mdash; zero UI, just a black screen with a breathing liquid orb that distorts to audio. Built on WebRTC with Cloudflare Workers and Durable Objects for signaling.</p>
+      <div class="voidchat-placeholder">
+        <div class="placeholder-inner">Live embed &mdash; coming soon</div>
+      </div>
     </section>
 
     <!-- ────────── About ────────── -->
@@ -104,7 +139,7 @@
     </section>
 
     <!-- ────────── Projects ────────── -->
-    <section class="projects">
+    <section id="projects" class="projects">
       <div class="section-label reveal">Selected Projects</div>
 
       <article class="project reveal">
@@ -185,34 +220,8 @@
       </article>
     </section>
 
-    <!-- ────────── Physics × Typography ────────── -->
-    <section class="physics reveal">
-      <div class="section-label">Physics &times; Typography</div>
-      <p class="physics-desc">A collection of scroll-driven text animations built with real physics &mdash; Langevin dynamics, curl noise particle systems, orbital mechanics, thermal simulations. Each experiment turns typography into a physical object that responds to forces.</p>
-      <div class="carousel">
-        <div class="carousel-track-wrapper">
-          <div class="carousel-track" id="carousel-track"></div>
-          <div class="carousel-overlay" id="carousel-overlay">click &amp; scroll</div>
-        </div>
-        <div class="carousel-controls">
-          <button class="carousel-btn carousel-prev" aria-label="Previous">&larr;</button>
-          <span class="carousel-label" id="carousel-label"></span>
-          <button class="carousel-btn carousel-next" aria-label="Next">&rarr;</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ────────── Voidchat ────────── -->
-    <section class="voidchat reveal">
-      <div class="section-label">voidchat</div>
-      <p class="voidchat-desc">P2P voice-only chatroulette. Two strangers connect and talk &mdash; zero UI, just a black screen with a breathing liquid orb that distorts to audio. Built on WebRTC with Cloudflare Workers and Durable Objects for signaling.</p>
-      <div class="voidchat-placeholder">
-        <div class="placeholder-inner">Live embed &mdash; coming soon</div>
-      </div>
-    </section>
-
     <!-- ────────── Experience ────────── -->
-    <section class="timeline">
+    <section id="timeline" class="timeline">
       <div class="section-label reveal">Experience</div>
       <div class="timeline-entries">
         <div class="timeline-entry reveal">
@@ -328,6 +337,25 @@
     overlay.addEventListener('click', () => {
       overlay.classList.add('hidden');
     });
+
+    // Side nav
+    const dots = document.querySelectorAll('.side-dot');
+    const sections = Array.from(dots).map(d => document.getElementById(d.dataset.section));
+
+    dots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        document.getElementById(dot.dataset.section).scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+
+    const navObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        const dot = document.querySelector('.side-dot[data-section="' + e.target.id + '"]');
+        if (dot) dot.classList.toggle('active', e.isIntersecting);
+      });
+    }, { threshold: 0 });
+
+    sections.forEach(s => navObserver.observe(s));
   </script>
 
 </body>
