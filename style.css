@@ -176,7 +176,7 @@ main {
 /* ─── Hero ─── */
 
 .hero {
-  min-height: 100vh;
+  min-height: 60vh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -384,10 +384,7 @@ main {
 /* (hero-meta replaced by hero-links) */
 
 .scroll-arrow {
-  position: absolute;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%);
+  margin-top: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -412,8 +409,8 @@ main {
 }
 
 @keyframes scrollBob {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(6px); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
 }
 
 /* (hero-photo-row removed — logos moved below tagline) */
@@ -458,12 +455,126 @@ main {
   transform: scale(1.2);
 }
 
+/* ─── Theme toggle ─── */
+
+.theme-toggle {
+  display: inline-flex;
+  gap: 0;
+  margin-top: 48px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.theme-option {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 18px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  transition: color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.theme-option:hover {
+  color: var(--fg-bright);
+}
+
+.theme-option svg {
+  width: 14px;
+  height: 14px;
+}
+
+.theme-option.active {
+  color: var(--fg-bright);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .theme-option.active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* ─── Light theme ─── */
+
+[data-theme="light"] {
+  --bg: #f5f4f0;
+  --fg: #333;
+  --fg-bright: #111;
+  --muted: #777;
+  --muted-light: #555;
+  --border: rgba(0, 0, 0, 0.12);
+  --border-hover: rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="light"] .grain-svg {
+  opacity: 0.025;
+}
+
+[data-theme="light"] .hero-photo img {
+  filter: contrast(1.05) brightness(1);
+}
+
+[data-theme="light"] .uni-logo {
+  filter: brightness(0);
+  opacity: 0.5;
+}
+
+[data-theme="light"] .voice-tooltip,
+[data-theme="light"] .voice-tooltip::before,
+[data-theme="light"] .hero-tip-box,
+[data-theme="light"] .hero-tip-arrow {
+  background: #fff;
+  border-color: var(--border);
+}
+
+[data-theme="light"] .scroll-arrow {
+  border-color: rgba(0, 0, 0, 0.25);
+  color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .scroll-arrow:hover {
+  border-color: rgba(0, 0, 0, 0.45);
+  color: rgba(0, 0, 0, 0.8);
+}
+
+[data-theme="light"] .lang-option:has(input:checked) {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .demo-panel-title {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+[data-theme="light"] .demo-panel-header:hover .demo-panel-title {
+  color: var(--fg);
+}
+
+[data-theme="light"] .carousel-overlay {
+  background: rgba(245, 244, 240, 0.8);
+}
+
+[data-theme="light"] .carousel-slide iframe,
+[data-theme="light"] .voidchat-embed iframe,
+[data-theme="light"] .demo-video-embed iframe {
+  background: #f5f4f0;
+}
+
+[data-theme="light"] .mutuals-avatars img {
+  filter: grayscale(0.5) brightness(0.9);
+}
+
+[data-theme="light"] .mutuals-avatars a:hover img {
+  filter: grayscale(0) brightness(1);
+}
+
 /* ─── Language toggle ─── */
 
 .lang-toggle {
   display: inline-flex;
   gap: 0;
-  margin-top: 48px;
+  margin-top: 10px;
   border: 1px solid var(--border);
   border-radius: 999px;
   overflow: hidden;
@@ -909,7 +1020,7 @@ main {
 /* ─── Demo accordion ─── */
 
 .demos-accordion {
-  padding-top: var(--section-gap);
+  padding-top: 60px;
 }
 
 .demo-panel + .demo-panel {
